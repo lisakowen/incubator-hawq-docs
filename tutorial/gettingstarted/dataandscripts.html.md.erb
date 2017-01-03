@@ -1,51 +1,51 @@
 ---
-title: Tutorial Data Set and Scripts
+title: Sample Data Set and Scripts
 ---
 
-The _Getting Started with Pivotal HDB Tutorial_ operates on an example data set.  This data set is provided in a set of `gzip`'d `.tsv` (tab-separated values) text files.  Scripts and other supporting files are also referenced by the tutorial.
+The _Getting Started with HAWQ_ exercises operate on an example data set.  This data set is provided in a set of `gzip`'d `.tsv` (tab-separated values) text files. The exercises also reference scripts and other supporting files included with the data set.
 
-In this section, you are introduced to the example data set.  You will also download and examine the data set and tutorial work files if they are not already present on your system.
+In this section, you are introduced to the example data set.  You will also download and examine the data set and work files if they are not already present on your system.
 
-## <a id="tut_exdownloadfilessteps"></a>Download the Tutorial Files
+## <a id="tut_exdownloadfilessteps"></a>Download the Data and Script Files
 
-If not already present in your VM, perform the following steps to download the tutorial work files.  These files include the sample data set and scripts.
+If not already present in your HAWQ installation or sandbox, perform the following steps to download the sample files.  These files include the sample data set and scripts.
 
-1. Open a terminal window and `ssh` into the sandbox VM as the `gpadmin` user.
+1. Open a terminal window and `ssh` into the sandbox as the `gpadmin` user.
 
     ``` shell
-    $ ssh gpadmin@vm_ipaddr
+    $ ssh gpadmin@<sandbox>
     ```
 
 2. Determine if the tutorial work files are present on your system:
 
     ``` shell
-    $ ??WHERE WOULD THEY BE??
+    gpadmin@sandbox$ ??WHERE WOULD THEY BE??
     ```
     
     If the work files are present, skip to step 5 of this exercise.
     
-3. Create a working directory for the tutorial and data files:
+3. Create a working directory for the data files and scripts:
 
     ``` shell
-    $ mkdir $HOME/hawqtutorial
-    $ cd $HOME/hawqtutorial
+    gpadmin@sandbox$ mkdir $HOME/hawqgetstart
+    gpadmin@sandbox$ cd $HOME/hawqgetstart
     ```
     
-    Ensure that all path components up to and including the `hawqtutorial` base directory have read and execute permissions for all.
+    Ensure that all path components up to and including the `hawqgetstart` base directory have read and execute permissions for all.
 
-4. Download the data set from `github` and check out the appropriate tag:
+4. Download the data set from `github` and check out the appropriate tag/branch:
 
     ``` shell
-    $ git clone git@github.com:lisakowen/pivotal-samples.git  ?? REPLACE WITH REAL REPO NAME ??
-    $ cd pivotal-samples
-    $ git checkout hdbVERSION_tutorial
+    gpadmin@sandbox$ git clone git@github.com:lisakowen/pivotal-samples.git  ?? REPLACE WITH REAL REPO NAME ??
+    gpadmin@sandbox$ cd pivotal-samples
+    gpadmin@sandbox$ git checkout hdb<version>_tutorial
     ```
-    where _VERSION_ identifies the current version of HDB (dots included, i.e. `hdb2.0_tutorial`).
+    where <version> identifies the current version of HDB (dots included, i.e. `hdb2.1.1_tutorial`).
    
-5. Save the path to the tutorial work files base directory:
+5. Save the path to the work files base directory:
 
     ``` shell
-    $ export HAWQTUTBASE=$HOME/hawqtutorial/pivotal-samples
+    gpadmin@sandbox$ export HAWQGSBASE=$HOME/hawqgetstart/pivotal-samples
     ```
     
     You may want to add this environment variable setting to your `.bash_profile`.
@@ -54,7 +54,7 @@ If not already present in your VM, perform the following steps to download the t
 ## <a id="tut_examinefilessteps"></a>Examine the Tutorial Files
     
 
-The tutorial work files `pivotal-samples` directory includes various subdirectories:
+Exercises reference work files in  the `pivotal-samples` directory, which includes various subdirectories:
   
 | Directory                                                    | Content                                                                                                                                                                                            |
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -64,13 +64,11 @@ The tutorial work files `pivotal-samples` directory includes various subdirector
 | hawq/pxf_tables/              | scripts used by PXF HDFS tutorials                                                                                         |
 | hawq/pxf\_hbase\_tables/      | scripts used by PXF HBase plug-in tutorials                                                                                         |
 
-?? CHANGE DIRECTORY STRUCTURE -i.e HAVE DIR FOR EACH SERVICE?  like hawq, pxf/hdhfs, pxf/hbase ... ???
-
-The HAWQ and PXF exercises include SQL, shell, and perl scripts to create, load, and verify table creation.
+The HAWQ and PXF exercises include various SQL, shell, and perl scripts to create, load, and verify table creation.
 
 ## <a id="tut_datasetschema"></a>Data Set Schema
 
-The sample Retail data set used in the tutorial exercises models an online retail store operation.  The store carries products.  Customers order the products.  The company delivers the products.
+The sample Retail data set used in the tutorial exercises models an online retail store operation.  The store carries different categories of products.  Customers order the products.  The company delivers the products.
 
 The Retail data set includes the following entities.  Orders and order line items are fact tables.  The other entities are represented in dimension tables.
 
