@@ -24,6 +24,8 @@ Add the command above to your `.bash_profile` to set up your HAWQ environment on
 ## <a id="tut_adminsetupenv"></a> HAWQ Administrator
 
 `gpadmin` is the HAWQ administrator user name.  The `gpadmin` user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
+
+The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI. Command line and Ambari management modes cannot generally be mixed.
   
 ## <a id="tut_adminclustermgmt"></a>HAWQ Management - Command Line
 
@@ -36,12 +38,12 @@ The following table identifies a subset of HAWQ management commands that are app
 | Action                                                    | Command                                                                                                                                                                                            |
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | get HAWQ cluster status | `$ hawq state` |
-| start/stop/restart HAWQ object (cluster, master, segment, standby, allsegments) | `$ hawq start object` <p> `$ hawq stop object` <p> `$ hawq restart object` |
+| start/stop/restart HAWQ object (cluster, master, segment, standby, allsegments) | `$ hawq start <object>` <p> `$ hawq stop <object>` <p> `$ hawq restart <object>` |
 | list HAWQ configuration parameters and values               | `$ hawq config --list`                                                                                         |
-| change value of HAWQ configuration parameter   | `$ hawq config -c parameter_name -v new_value`                                                                                         |
+| add/change value of HAWQ configuration parameter (command-line managed HAWQ clusters only)  | `$ hawq config -c <paramname> -v <value>`                                                                                         |
 | reload HAWQ configuration files               | `$ hawq stop --reload`                                                                                         |
 | restart PXF service               | `$ sudo service pxf-service restart`                                                                                         |
-| extract/dump database             | `$ pg_dump -f output_file dbname`                                                                                         |
+| extract/dump database             | `$ pg_dump -f <output_file> <dbname>`                                                                                         |
 
 ### <a id="tut_adminclustermgmthstate"></a>HAWQ State 
 
@@ -70,7 +72,7 @@ State information returned includes the status of the master node, standby maste
 
 HAWQ configuration parameters affect the behaviour of the HAWQ system.  The collection of HAWQ configuration parameters and values are stored in the `$GPHOME/etc/hawq-site.xml` file.  Use the `hawq config` command to view and set the values of HAWQ configuration parameters from the command line.
 
-Display the value of the segment temporary directory:
+To display the value of the segment temporary directory:
 
 ``` shell
 $ hawq config --show hawq_segment_temp_directory
@@ -78,7 +80,7 @@ GUC	   : hawq_segment_temp_directory
 Value  : /tmp/hawq/segment
 ```
 
-Set the PL/Java classpath configuration parameter value:
+To set the HAWQ PL/Java `pljava_classpath` configuration parameter and value via the command line:
 
 ``` shell
 $ hawq config -c pljava_classpath -v \'examples.jar\'
@@ -90,20 +92,20 @@ Value   : examples.jar
 
 As the message indicates, `pljava_classpath` was not previously set.
 
-HAWQ configuration must be reloaded after setting a configuration parameter. 
+HAWQ configuration must be reloaded after setting a configuration parameter: 
 
 ``` shell
 $ hawq stop --reload
 ```
 
-`hawq config` will propagate the configuration parameter value changes across the cluster.  Never modify the `hawq-site.xml` file directly.
+`hawq config` will propagate configuration parameter value changes across the cluster.  Never modify the `hawq-site.xml` file directly.
 
 
 ## <a id="tut_adminclustermgmt"></a>HAWQ Management - Ambari Web UI
 
-You can also use the Ambari Web UI to manage your HAWQ deployment.
+The HAWQ administrator may choose to use the Ambari Web UI to manage the HAWQ deployment. The Ambari Web UI provides a graphical front-end to HAWQ cluster management activities.  The sandbox utilizes Ambari for HAWQ cluster management.
 
-?? CHANGE RUNTIME CONFIG PARAM AND STOP --reload AND DISCUSS ??
+Perform the following steps to set the HAWQ PL/Java `pljava_classpath` configuration parameter and value via Ambari:
 
 1. Start the Ambari web UI by entering the the IP address of your sandbox VM followed by `:8080` in the URL of a browser window.  If you do not remember, view the `/etc/hosts` file to get your VM IP address: 
 
@@ -113,27 +115,46 @@ You can also use the Ambari Web UI to manage your HAWQ deployment.
     
     Ambari runs on port 8080.
 
-2. Log in to Ambari; Ambari user credentials in the sandbox VM are `admin`/`admin`.
+2. Log in to Ambari; Ambari user credentials in the sandbox are `admin`/`admin`.
 
     After logging in, you are presented with the Ambari dashboard. The dashboard provides an at-a-glance status of the health of your HAWQ cluster. A list of running services and their status is displayed in the left panel. The main display area includes a set of configurable tiles providing specific information about your cluster, including HDFS disk usage and resource manager metrics.
 
-3. Select the *HAWQ* service from the service list.
+3. Select the **HAWQ** service from the service list.
 
-    The HAWQ service page *Summary* tab is displayed.  This page includes a *Summary* pane identifying the HAWQ master and all HAWQ segment nodes in your cluster. The *Metrics* pane includes a set of HAWQ-specific metrics tiles.
+    The HAWQ service page **Summary** tab is displayed.  This page includes a **Summary** pane identifying the HAWQ master and all HAWQ segment nodes in your cluster. The **Metrics** pane includes a set of HAWQ-specific metrics tiles.
     
-4. View HAWQ-specific configuration settings by selecting the *Configs* tab.
+4. View HAWQ-specific configuration settings by selecting the **Configs** tab.
 
     HAWQ general settings displayed include master and segment data and temp directories, and specific resource management parameters.
     
-5. Select the *Advanced* tab to view additional HAWQ parameter settings.
+5. Select the **Advanced** tab to view additional HAWQ parameter settings.
 
-    The *General* drop down pane is opened. In addition to displaying master and segment port information, this pane is where the HAWQ administrator would (re)set the `gpadmin` password.
+    The **General** drop down pane is opened. In addition to displaying master and segment port information, this pane is the configuration area for (re)setting the `gpadmin` user OS password.
     
-    *Advanced* and *Custom* drop down panes provide access to advanced configuration settings for HAWQ, HDFS, and YARN components.
+    **Advanced \<config\>** and **Custom \<config\>** drop down panes provide access to advanced configuration settings for HAWQ, HDFS, and YARN components.
     
-6.  Select the *Advanced hawq-site* drop down.
+6.  Select the **Advanced hawq-site** drop down.
 
    Specific configuration parameters and values are displayed in the pane.  Hover the mouse cursor over the value field to display a tooltip description of a specific configuration parameter.
+
+7.  Select the **Custom hawq-site** drop down.
+
+   Custom configuration parameters and values are displayed in the pane.  The pane will be empty if no configuration parameters have been set.
+
+8.  Select **Add Property ...** to add the `pljava_classpath` property and value:
+
+    The **Add Property** dialog is displayed. This dialog includes **Type**, **Key**, and **Value** entry fields.
+
+9.  Fill in the **Add Property** fields:
+
+    **Key**: pljava_classpath  
+    **Value**: examples.jar
+
+10.  **Add** the custom property.  Then **Save** the updated configuration, optionally providing a **Note** in the **Save Configuration** dialog.
+
+    The HAWQ service must be restarted after adding or updating configuration parameter values, as indicated by the orange colored **Restart** button in the right corner of the window.
+
+11.  Select the orange **Restart** button to **Restart All Affected** HAWQ service nodes.
 
 
 ## <a id="tut_admindbaccess"></a>HAWQ Database
@@ -142,7 +163,7 @@ The HAWQ PostgreSQL database XXXX
 
 ??DESCRIBE HOW IT DOES/DOES NOT CONFORM TO STANDARD??
 
-?? DESCRIBE HAWQ DATABASES/TABLES CREATED AT INSTALL TIME ??
+HAWQ creates a database named `postgresql` at install time. The sandbox installation also includes a database named `gpadmin`.
 
 ### <a id="tut_admindbaccesscmds"></a>Database Commands
 
@@ -154,12 +175,12 @@ HAWQ databases and roles can be created and deleted by authorized users via the 
 
 | Action                                                    | Command                                                                                                                                                                                            |
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| create database | `createdb` |
-| created database role   | `createuser`                                                                                         |
-| remove database    | `dropdb`                                                                                         |
-| remove database role     | `dropuser`                                                                                         |
+| create database | `createdb <dbname>` |
+| created database role   | `createuser <rolename>`                                                                                         |
+| remove database    | `dropdb <dbname>`                                                                                         |
+| remove database role     | `dropuser <rolename>`                                                                                         |
 | interactive HAWQ database front-end     | `psql`                                                                                         |
-| run SQL command directly     | `psql -c SQL_COMMAND`                                                                                         |
+| run SQL command directly     | `psql -c <sqlcommand>`                                                                                         |
 
 
 ### <a id="tut_admindbaccesspsql"></a>psql
@@ -170,8 +191,8 @@ You can also manage and access HAWQ databases via the `psql` utility, an interac
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | list databases | `\l` |
 | list tables in current database   | `\dt`                                                                                         |
-| get schema info for specific table   | `\d tablename`                                                                                         |
-| read SQL script     | `\i scriptname`                                                                                         |
+| get schema info for specific table   | `\d <tablename>`                                                                                         |
+| read SQL script     | `\i <scriptname>`                                                                                         |
 | quit    | `\q`                                                                                         |
 
 For detailed information on `psql` commands, refer to the [psql](../../reference/cli/client_utilities/psql.html) reference page.
