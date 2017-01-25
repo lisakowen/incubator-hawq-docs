@@ -145,7 +145,7 @@ Create a Hive table to expose our sample data set.
 
 ### <a id="get_hdfs_file_location"></a>Determine the HDFS location of a Hive Table
 
-Should you need to identify the HDFS file location of a Hive managed table, you will reference it using its HDFS file path. You can determine a Hive table's location in HDFS using the `DESCRIBE` command, for example:
+Should you need to identify the HDFS file location of a Hive managed table, reference it using its HDFS file path. You can determine a Hive table's location in HDFS using the `DESCRIBE` command, for example:
 
 ``` sql
 hive> DESCRIBE EXTENDED sales_info;
@@ -188,7 +188,7 @@ Hive-plug-in-specific keywords and values used in the [CREATE EXTERNAL TABLE](..
 
 ## <a id="profile_hive"></a>Hive Profile
 
-The `Hive` profile works with any Hive file format. This profile can also be used to access heterogenous format data in a single table where each partition may be stored in a different file format. Refer to the [Partition Filtering](#partitionfiltering) discussion later in this topic for additional information on partitioning and the `Hive` profile.
+The `Hive` profile works with any Hive file format. You can use this profile to access heterogenous format data in a single table where each partition may be stored in a different file format. Refer to the [Partition Filtering](#partitionfiltering) discussion later in this topic for additional information on partitioning and the `Hive` profile.
 
 While you can use the `Hive` profile to access any file format, the more specific profiles perform better for those single file format types.
 
