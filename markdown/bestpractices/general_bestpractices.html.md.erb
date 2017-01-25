@@ -1,26 +1,35 @@
 ---
-title: HAWQ Best Practices
+title: HAWQ General Best Practices
 ---
 
 This topic addresses general best practices for users who are new to HAWQ.
 
-When using HAWQ, adhere to the following guidelines for best results:
+There are separate sections for best practices for operating and securing HAWQ, as well as for querying data and managing data and resources.
 
--   **Use a consistent `hawq-site.xml` file to configure your entire cluster**:
+## <a id="task_tx4_bl3_h5"></a>Cluster Management
 
-    Configuration guc/parameters are located in `$GPHOME/etc/hawq-site.xml`. This configuration file resides on all HAWQ instances and can be modified by using the `hawq config` utility. You can use the same configuration file cluster-wide across both master and segments.
-    
-    If you install and manage HAWQ using Ambari, do not use `hawq config` to set or change HAWQ configuration properties. Use the Ambari interface for all configuration changes. Configuration changes to `hawq-site.xml` made outside the Ambari interface will be overwritten when you restart or reconfigure  HAWQ using Ambari.
+Use a consistent interface to configure and manage HAWQ. If you use Ambari to install and manage HAWQ, use the Ambari interface, rather than the command line for all configuration changes.
 
-    **Note:** While `postgresql.conf` still exists in HAWQ, any parameters defined in `hawq-site.xml` will overwrite configurations in `postgresql.conf`. For this reason, we recommend that you only use `hawq-site.xml` to configure your HAWQ cluster.
+The configuration parameters for HAWQ are maintained in the `hawq-site.xml` file. This file can be modified either via Ambari or by using HAWQ commands such as  `hawq config`. Use a consistent strategy (Ambari or command line interface) to maintain the contents of `hawq-site.sml`. For Ambari clusters, always use Ambari for configuring `hawq-site.xml` parameters.; restarting or reconfiguring HAWQ via Ambari will overwrite any `hawq-site.xml` configuration changes made outside the Ambari interface.
 
--   **Keep in mind the factors that impact the number of virtual segments used for queries. The number of virtual segments used directly impacts the query's performance.** The degree of parallelism achieved by a query is determined by multiple factors, including the following:
-    -   **Cost of the query**. Small queries use fewer segments and larger queries use more segments. Note that there are some techniques you can use when defining resource queues to influence the number of virtual segments and general resources that are allocated to queries. See [Best Practices for Using Resource Queues](managing_resources_bestpractices.html#topic_hvd_pls_wv).
-    -   **Available resources**. Resources available at query time. If more resources are available in the resource queue, the resources will be used.
-    -   **Hash table and bucket number**. If the query involves only hash-distributed tables, and the bucket number (bucketnum) configured for all the hash tables is either the same bucket number for all tables or the table size for random tables is no more than 1.5 times larger than the size of hash tables for the hash tables, then the query's parallelism is fixed (equal to the hash table bucket number). Otherwise, the number of virtual segments depends on the query's cost and hash-distributed table queries will behave like queries on randomly distributed tables.
-    -   **Query Type**: For queries with some user-defined functions or for external tables where calculating resource costs is difficult , then the number of virtual segments is controlled by `hawq_rm_nvseg_perquery_limit `and `hawq_rm_nvseg_perquery_perseg_limit` parameters, as well as by the ON clause and the location list of external tables. If the query has a hash result table (e.g. `INSERT into hash_table`) then the number of virtual segment number must be equal to the bucket number of the resulting hash table, If the query is performed in utility mode, such as for `COPY` and `ANALYZE` operations, the virtual segment number is calculated by different policies, which will be explained later in this section.
-    -   **PXF**: PXF external tables use the `default_hash_table_bucket_number` parameter, not the `hawq_rm_nvseg_perquery_perseg_limit` parameter, to control the number of virtual segments. 
+When using the command line, use `hawq start cluster` or `hawq restart cluster` to start the entire cluster, rather than starting the master and individual segments.
 
-    See [Query Performance](../query/query-performance.html#topic38) for more details.
+Stop the entire HAWQ system by stopping the cluster with the command `hawq stop cluster`. See [Best Practices for Using the Command Line to Start/Stop HAWQ Cluster Members](operating_hawq_bestpractices.html) for more information.
 
 
+## <a id="task_tx4_bl3_h5"></a>Postgres and HAWQ
+
+The  HAWQ system is distributed across multiple machines, and thus differs from a standard PostgreSQL DBMS. Note the following differences and restrictions when using the command line interface, and follow these best practices:
+
+-  Always use HAWQ management commands to start and stop HAWQ. 
+
+-  Do not issue a KILL command to end any Postgres process. Instead, use the database command pg_cancel_backend(). 
+
+-  Do not define any parameters by using  `postgresql.conf`. Use only `hawq-site.xml` to configure your HAWQ cluster. Any parameters defined in `hawq-site.xml` will overwrite parameters in `postgresql.conf`.
+
+ 
+
+
+
+
+ 
