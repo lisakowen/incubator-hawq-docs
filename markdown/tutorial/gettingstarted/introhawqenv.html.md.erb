@@ -1,0 +1,67 @@
+---
+title: HAWQ Runtime Environment
+---
+
+The _Getting Started with HAWQ_ exercises operate on a HAWQ 2.x runtime environment. This environment may be a commerical HAWQ product distribution, a HAWQ sandbox virtual machine or docker environment, or a HAWQ installation you built from source. 
+
+This section introduces you to the HAWQ runtime environment. You will examine your HAWQ installation, set up your HAWQ environment, and execute HAWQ management commands. If installed in your environment, you will also explore the Ambari management console.
+
+## <a id="tut_runtime_usercred"></a>Prerequisites
+
+The HAWQ administrative user is named `gpadmin`. This is the user account from which you will administer your HAWQ cluster. To perform the exercises in this tutorial, you must:
+
+- Obtain the `gpadmin` user credentials.
+
+- Ensure that your HAWQ runtime environment is configured such that the HAWQ admin user `gpadmin` can run commands to access the HDFS Hadoop system accounts (`hdfs`, `hadoop`) via `sudo` without having to provide a password.
+
+- Obtain the Ambari UI user name and password (optional, if Ambari is installed in your HAWQ deployment).
+
+## <a id="tut_runtime_setup"></a> Exercise: Set Up your HAWQ Runtime Environment
+
+Perform the following steps to set up your HAWQ runtime environment:
+
+1. Install a HAWQ commercial product distribution, install a HAWQ sandbox virtual machine or docker environment, or build and install HAWQ from source. Ensure that your HAWQ installation is configured appropriately.
+
+2. Make note of the HAWQ master node hostname or IP address.
+
+3. [Running a HAWQ Cluster](../../admin/RunningHAWQ.html) provides an overview of the components comprising a HAWQ cluster. Review this topic.
+
+4.	Log in to the HAWQ master node using the `gpadmin` user credentials:
+
+    ``` shell
+    $ ssh gpadmin@<master>
+    Password:
+    ```
+
+5. Set up your HAWQ environment by performing the steps in [Procedure: Setting Up Your HAWQ Operating Environment](../../admin/setuphawqopenv.html#hawq_setupenv).
+
+    You must source `greenplum_path.sh` before invoking any HAWQ commands. `greenplum_path.sh` sets the `$GPHOME` environment variable to the base directory of your HAWQ installation.
+
+6. Examine your HAWQ installation. [HAWQ Files and Directories](../../admin/setuphawqopenv.html#hawq_env_files_and_dirs) includes a list of important files and directories and their install locations. Your `$GPHOME` may differ, based on the source (product distribution, sandbox, self-compiled) of your HAWQ installation.
+  
+6. View the current state of your HAWQ cluster. If it is not already running, start the cluster.
+
+    *If you manage your HAWQ cluster from the command line*:
+
+    ``` shell
+    gpadmin@master$ hawq state
+    gpadmin@master$ hawq start cluster
+    ```
+
+    *If you manage your HAWQ cluster with Ambari* start the Ambari management console:
+    
+    1. Enter the following URL in your favorite (supported) browser window:
+
+        ``` shell
+        <ambari-server-node>:8080
+        ```
+
+    2. Log in with the Ambari credentials and view the Ambari dashboard:
+
+        ![Ambari Dashboard](ambariconsole.png)
+ 
+        After logging in, you are presented with the Ambari dashboard. The dashboard provides an at-a-glance status of the health of your HAWQ cluster. A list of each running service and it's status is displayed in the left panel. The main display area includes a set of configurable tiles providing specific information about your cluster, including HAWQ segment status, HDFS disk usage, and resource manager metrics. 
+        
+    3. Select the **HAWQ** service from the left pane. If the HAWQ service is not running, select the **Start** operation from the **Service Actions** menu button to start your HAWQ cluster.
+
+Your HAWQ cluster should now be installed, configured, and running.

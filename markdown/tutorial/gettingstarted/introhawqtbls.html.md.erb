@@ -1,0 +1,200 @@
+---
+title: Introduction to HAWQ Tables
+---
+
+HAWQ writes to and reads from HDFS natively. HAWQ tables are similar to tables in any relational database, except that table rows (data) are distributed across the different segments in the system.
+
+In this exercise, you will run scripts that use the SQL `CREATE TABLE` command to create HAWQ tables. You will load the Retail sample data set into the HAWQ tables using the `COPY` command. You will also perform complex queries on the data set.
+
+
+## <a id="tut_introhawqtblprereq"></a>Prerequisites
+
+Ensure that you have:
+
+- [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup),
+- [Created the HAWQ Tutorial Database](basicdbadmin.html#tut_ex_createdb),
+- [Downloaded the Sample Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
+- [Created the Retail Data Set Schema](dataandscripts.html#tut_dsschema_ex),
+
+and that your HAWQ cluster is up and running.
+
+## <a id="tut_excreatehawqtblsteps"></a>Exercise: Create, Add Data to, and Query HAWQ Retail Demo Tables
+
+Perform the following steps to create and load HAWQ tables from the sample Retail data set. 
+
+1. Navigate to the HAWQ script directory:
+
+    ``` shell
+    gpadmin@master$ cd $HAWQGSBASE/tutorials/getstart/hawq
+    ```
+
+2. Start the `psql` subsystem:
+
+    ``` shell
+    gpadmin@master$ psql
+    ```
+
+    ``` sql
+    hawqgsdb=#
+    ```
+    
+    You should be connected to the `hawqgsdb` database.
+
+    
+3. Create tables for the Retail demo data set using the script provided:
+    
+    ``` sql
+    hawqgsdb=# \i ./create_hawq_tables.sql
+    hawqgsdb=# \q
+    ```
+	
+    Note: The `create_hawq_tables.sql` script deletes each table before attempting to create it. If this is your first time performing this exercise, you can safely ignore the `psql` "table does not exist, skipping" NOTICE messages.)
+    
+6. Let's take a look at the `create_hawq_tables.sql` script:
+
+    ``` shell
+    gpadmin@master$ vi create_hawq_tables.sql
+    ```
+
+    Notice the use of the `retail_demo.` schema name prefix to the table names:
+    
+    ``` sql
+    DROP TABLE IF EXISTS retail_demo.categories_dim_hawq;
+    CREATE TABLE retail_demo.categories_dim_hawq
+      (   
+        category_id integer NOT NULL,
+        category_name character varying(400) NOT NULL
+      )
+    WITH (appendonly=true, compresstype=zlib) DISTRIBUTED RANDOMLY;
+    ```
+    
+    The `CREATE TABLE` statement above creates a table named `categories_dim_hawq` in the `retail_demo` schema. `categories_dim_hawq` has two columns, `category_id` (integer type) and `category_name` (text type, up to 400 characters), neither of which may be empty/null. The data in `categories_dim_hawq` is distributed randomly and is compressed using the `zlib` compression algorithm.
+    
+    Table definition for the `products_dim_hawq` table:
+    
+    ``` sql
+    DROP TABLE IF EXISTS retail_demo.products_dim_hawq;
+    CREATE TABLE retail_demo.products_dim_hawq
+      (
+        product_id TEXT,
+        category_id TEXT,
+        price TEXT,
+        product_name TEXT
+      )
+    WITH (appendonly=true, compresstype=zlib) DISTRIBUTED RANDOMLY;
+    ```
+
+6. Use the provided script to load (may take a bit of time) the Retail demo data set:
+
+    ``` shell
+    gpadmin@master$ ./load_hawq_tables.sh
+    ```
+
+6. Take a look at the `load_hawq_tables.sh` script:
+
+    ``` shell
+    gpadmin@master$ vi load_hawq_tables.sh
+    ```
+
+    Again, notice the use of the `retail_demo.` schema name prefix to the table names. Examine a few of the `psql -c` `COPY` commands:
+    
+    ``` shell
+    zcat $DATADIR/categories_dim.tsv.gz | psql -c "COPY retail_demo.categories_dim_hawq FROM STDIN DELIMITER E'\t' NULL E'';"
+zcat $DATADIR/products_dim.tsv.gz | psql -c "COPY retail_demo.products_dim_hawq FROM STDIN DELIMITER E'\t' NULL E'';"
+    ```
+    The `load_hawq_tables.sh` shell script uses the `zcat` command to uncompress the `.tsv.gz` data files. The SQL `COPY` command copies `STDIN` (i.e. the output of the `zcat` command) to the HAWQ table. The `COPY` command also identifies the `DELIMITER` used in the file (tab) and the `NULL` string. While probably not the most efficient way to load the data, it gets the job done.
+
+6. Use the provided script to verify the Retail demo data set:
+
+    ``` shell
+    gpadmin@master$ ./verify_load_hawq_tables.sh
+    ```
+
+    The output of the `verify_load_hawq_tables.sh` script should match the following:
+
+    ``` shell						    
+        Table Name                |    Count 
+    ------------------------------+------------------------
+     customers_dim_hawq           |   401430  
+     categories_dim_hawq          |   56 
+     customer_addresses_dim_hawq  |   1130639
+     email_addresses_dim_hawq     |   401430
+     order_lineitems_hawq         |   1024158
+     orders_hawq                  |   512071
+     payment_methods_hawq         |   5
+     products_dim_hawq            |   698911
+    -----------------------------+------------------------
+    ```
+    
+7. Examine the categories in the `categories_dim_hawq` table:
+
+    ``` shell
+    gpadmin@master$ psql
+    ```
+
+    ``` sql
+    hawqgsdb=# SELECT * FROM retail_demo.categories_dim_hawq ORDER BY category_id;
+     category_id |           category_name           
+    -------------+-----------------------------------
+               1 | Digital Music Album
+               2 | Photography
+               3 | Musical Instruments
+    ...
+    ```
+    
+    The `ORDER BY` clause identifies the sort column, `category_id`. If you do not specify an `ORDER BY` column(s), the rows are returned in the order in which they were added to the table.
+
+7. Determine the top three postal codes by order revenue by running the following query on the `orders_hawq` table:
+
+    ``` shell
+    gpadmin@master$ psql
+    ```
+
+    ``` sql
+    hawqgsdb=# SELECT billing_address_postal_code,
+                 sum(total_paid_amount::float8) AS total,
+                 sum(total_tax_amount::float8) AS tax
+               FROM retail_demo.orders_hawq
+                 GROUP BY billing_address_postal_code
+                 ORDER BY total DESC LIMIT 3;
+    ```
+    
+    Notice the use of the `sum()` aggregate function to add the order totals (`total_amount_paid`) and tax totals (`total_tax_paid`) for all orders. These totals are grouped/summed for each `billing_address_postal_code`;
+    
+    Compare your output to the following:
+ 
+    ``` pre
+     billing_address_postal_code |   total   |    tax    
+    ----------------------------+-----------+-----------
+     48001                       | 111868.32 | 6712.0992
+     15329                       | 107958.24 | 6477.4944
+     42714                       | 103244.58 | 6194.6748
+    (3 rows)
+    ```
+    
+8. Identify the names and email addresses of all customers who made gift certificate purchases, and provide an overall order total for such purchases:
+
+    ``` sql
+    hawqgsdb=# SELECT substring(retail_demo.orders_hawq.customer_email_address for 37) AS email_address, last_name, 
+                 sum(retail_demo.orders_hawq.total_paid_amount::float8)
+               FROM retail_demo.customers_dim_hawq, retail_demo.orders_hawq
+               WHERE retail_demo.orders_hawq.payment_method_code='GiftCertificate' AND 
+                     retail_demo.orders_hawq.customer_id=retail_demo.customers_dim_hawq.customer_id
+               GROUP BY retail_demo.orders_hawq.customer_email_address, last_name ORDER BY last_name;
+    ```
+    
+    The `SELECT` statement above uses columns from both the `orders_hawq` and `customers_dim_hawq` tables to form the query. The `orders_hawq` `customer_id` field is compared with the `customers_dim_hawq` `customer_id` field to produce the orders associated with a specific customer where the `orders_hawq` `payment_method_code` identifies `GiftCertificate`.
+    
+    Query output:
+    
+    ``` pre
+                 email_address             |   last_name    |   sum    
+    ---------------------------------------+----------------+----------
+     Jay.Aaron@aljsad.net                  | Aaron          |    72.36
+     Libbie.Aaron@qatarw.com               | Aaron          |   102.33
+     Christopher.Aaron@phpmydirectory.com  | Aaron          |    17.16
+     Suellen.Abad@anatranny.com            | Abad           |   125.93
+     Marybelle.Abad@idividi.com.mk         | Abad           |    14.97
+     Luvenia.Abad@mediabiz.de              | Abad           |   107.99
+     ...
+    ```
