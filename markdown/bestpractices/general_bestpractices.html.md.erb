@@ -8,13 +8,13 @@ This section contains general guidelines for using HAWQ. In addition to this sec
 
 ## <a id="task_tx4_bl3_h5"></a>Cluster Management
 
-Use a consistent interface (Ambari or command line) to configure and manage HAWQ. If you use Ambari to install and manage HAWQ, use the Ambari interface, rather than the command line for all configuration changes.
+Use a consistent interface (Ambari or command line) to configure and manage HAWQ. If you use Ambari to install and manage HAWQ, use the Ambari interface, rather than the command line, for all configuration changes.
 
 The configuration parameters for HAWQ are maintained in the `hawq-site.xml` file. This file can be modified either via Ambari or by using HAWQ commands such as  `hawq config`. Use a consistent strategy (Ambari or command line interface) to maintain the contents of `hawq-site.xml`. For Ambari clusters, always use Ambari for configuring `hawq-site.xml` parameters.; restarting or reconfiguring HAWQ via Ambari will overwrite any `hawq-site.xml` configuration changes made outside the Ambari interface.
 
 When using the command line, use `hawq start cluster` or `hawq restart cluster` to start the entire cluster, rather than starting the master and individual segments.
 
-Stop the entire HAWQ system by stopping the cluster with the command `hawq stop cluster`. See [Best Practices for Using the Command Line to Start/Stop HAWQ Cluster Members](operating_hawq_bestpractices.html) for more information on the various `hawq stop` options.
+Similarly, if using the command line, stop the entire HAWQ system by stopping the cluster by using the command `hawq stop cluster`. See [Best Practices for Using the Command Line to Start/Stop HAWQ Cluster Members](operating_hawq_bestpractices.html) for more information on the various `hawq stop` options.
 
 
 ## <a id="task_tx4_bl3_h5"></a>Postgres and HAWQ
