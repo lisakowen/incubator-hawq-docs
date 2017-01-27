@@ -1,0 +1,192 @@
+---
+title: Introduction to the HAWQ Extension Framework (PXF)
+---
+
+Data in many HAWQ deployments may already reside in external sources. The HAWQ Extension Framework (PXF) provides access to this external data via built-in connectors called plug-ins. These plug-ins facilitate mapping the data source to a HAWQ external table definition. PXF includes HDFS, Hive, HBase, and JSON plug-ins. For additional information about PXF, refer to [Using PXF with Unmanaged Data](../../pxf/HawqExtensionFrameworkPXF.html).
+
+In this exercise, you will load the sample Retail data set into HDFS. You will use the PXF HDFS plug-in to create HAWQ external table definitions to access the HDFS data. You will perform queries on the HDFS data via HAWQ.
+
+## <a id="tut_intropxfprereq"></a>Prerequisites
+
+Ensure that you have:
+
+- [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup),
+- [Created the HAWQ Tutorial Database](basicdbadmin.html#tut_ex_createdb),
+- [Downloaded the Sample Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
+- [Created the Retail Data Set Schema](dataandscripts.html#tut_dsschema_ex),
+- [Created the HAWQ Retail Demo Tables](introhawqtbls.html#tut_excreatehawqtblsteps),
+
+and that your HAWQ cluster is up and running.
+
+## <a id="tut_excreatepxftblsteps"></a>Exercise: Create  and Query PXF Retail Demo External Tables
+
+Perform the following steps to load the Retail data set into HDFS and create HAWQ external table definitions to access the HDFS data.
+
+1. Log in to the HAWQ master node as the `gpadmin` user and set up your HAWQ environment:
+
+    ``` shell
+    $ ssh gpadmin@<master>
+    gpadmin@master$ source /usr/local/hawq/greenplum_path.sh
+    ```
+
+2. Navigate to the PXF script directory:
+
+    ``` shell
+    gpadmin@master$ cd $HAWQGSBASE/tutorial/getstart/pxf
+    ```
+
+3. Using the provided script, load the sample data files into HDFS. You will load the data to the HDFS `/retail_demo` directory: 
+
+    ``` shell
+    gpadmin@master$ ./load_data_to_HDFS.sh
+    ```
+	
+	 `load_to_HDFS.sh` loads the sample data `.tsv.gz` files directly into HDFS. Each file is loaded to it's respective `/retail_demo/<tablename>/<tablename>.tsv.gz` path.
+	 
+4. View the HDFS `/retail_demo` directory hierarchy:
+
+    ``` shell
+    gpadmin@master$ sudo -u hdfs hdfs dfs -ls /retail_demo/*
+    ```
+
+5. PXF communicates with the HDFS NameNode in your cluster. Obtain the hostname or IP address associated with the NameNode, and then run the following script:
+
+    ``` shell
+    gpadmin@master$ ./set_namenode.sh <name-node>
+    create_pxf_tables.sql - NAMENODE changed to <name-node>
+    ```
+    
+    `set_namenode.sh` updates the PXF script file `create_pxf_tables.sql`  appropriately to enable HAWQ/PXF communication with the NameNode.
+
+6. Start the `psql` subsystem:
+
+    ``` shell
+    $ psql
+    ```
+	 
+	 ``` sql
+	 hawqgsdb=#
+	 ```
+
+8. Create a HAWQ external table definition to represent the Retail `customer_dim` table data you just loaded into HDFS; substitute your `namenode` hostname or IP address in the `LOCATION` clause, and then exit `psql`:
+
+	 ``` sql
+    hawqgsdb=# CREATE EXTERNAL TABLE retail_demo.customers_dim_pxf
+                (customer_id TEXT, first_name TEXT,
+                 last_name TEXT, gender TEXT)
+               LOCATION ('pxf://namenode:51200/retail_demo/customers_dim/customers_dim.tsv.gz?profile=HdfsTextSimple')
+               FORMAT 'TEXT' (DELIMITER = E'\t');
+    
+    hawqgsdb=# \q
+    ```
+
+    The `LOCATION` clause of a `CREATE EXTERNAL TABLE` statement specifying the `pxf` protocol must include:
+    - The hostname or IP address of your HAWQ cluster's HDFS `namenode`.
+    - The location and/or name of the external data source. You specified the HDFS file path to the `customer_dim` data above.
+    - The PXF `profile` you use to access the external data. The PXF HDFS plug-in supports the `HdfsTextSimple` profile to access delimited text format data. (Refer to [Accessing HDFS File Data](../../pxf/HDFSFileDataPXF.html) for detailed information about the PXF HDFS Plug-in.)
+
+    The `FORMAT` clause of a `CREATE EXTERNAL TABLE` statement specifying the `pxf` protocol and `HdfsTextSimple` profile must identify `TEXT` format and include the `DELIMITER` character used to access the external data source. You identified a tab delimiter character above.
+
+6. Use the tutorial work files to create HAWQ external table definitions for the remainder of the Retail data set:
+    
+    ``` shell
+    gpadmin@master$ psql
+    ```
+    
+    ``` sql
+    hawqgsdb=# \i create_pxf_tables.sql
+    hawqgsdb=# \q
+    ```
+    	
+    Note: The `create_pxf_tables.sql` script deletes each external table before attempting to create it. If this is your first time performing this exercise, you can safely ignore the `psql` "table does not exist, skipping" NOTICE messages.
+    
+6. Verify that the external table definitions were created successfully:
+
+    ``` shell
+    gpadmin@master$ ./verify_create_pxf_tables.sh 
+    ```
+   	 
+    The output of the script should match the following:
+
+    ``` pre
+        Table Name                 |    Count 
+    -------------------------------+------------------------
+     customers_dim_pxf             |   401430  
+     categories_dim_pxf            |   56 
+     customer_addresses_dim_pxf    |   1130639
+     email_addresses_dim_pxf       |   401430
+     order_lineitems_pxf           |   1024158
+     orders_pxf                    |   512071
+     payment_methods_pxf           |   5
+     products_dim_pxf              |   698911
+    -------------------------------+------------------------
+    ```
+
+8. Determine the top ten postal codes by order revenue by running the following query on the `retail_demo.orders_pxf` table:
+
+    ``` shell
+    $ psql
+    ```
+    
+    ``` sql
+    hawqgsdb=# SELECT billing_address_postal_code,
+                 sum(total_paid_amount::float8) AS total,
+                 sum(total_tax_amount::float8) AS tax
+               FROM retail_demo.orders_pxf
+                 GROUP BY billing_address_postal_code
+                 ORDER BY total DESC LIMIT 3;
+    ```
+
+    Compare your output to the following:
+ 
+    ``` shell
+     billing_address_postal_code |   total   |    tax    
+    -----------------------------+-----------+-----------
+     48001                       | 111868.32 | 6712.0992
+     15329                       | 107958.24 | 6477.4944
+     42714                       | 103244.58 | 6194.6748
+    (3 rows)
+    ```
+
+## <a id="tut_excreatepxftblsteps"></a>Exercise: Query HAWQ and PXF Retail Demo Tables
+
+Often, data will reside in both HAWQ tables and external data sources. In these instances, you can use both HAWQ internal and external tables to relate and query the data.
+
+Perform the following steps to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases. The `orders` data resides in HDFS and the `customers_dim` data resides in a HAWQ-managed table.
+
+1. Start the `psql` subsystem:
+
+    ``` shell
+    $ psql
+    ```
+	 
+	 ``` sql
+	 hawqgsdb=#
+	 ```
+
+2. The orders HDFS data is accessible via the `orders_pxf` PXF external table created in the previous exercise. The customers_dim data is accessible via the `customers_dim_hawq` table created in a previous section. Using these HAWQ  tables, construct a query to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases:
+
+    ``` sql
+    hawqgsdb=# SELECT substring(retail_demo.orders_pxf.customer_email_address for 37) AS email_address, last_name, 
+                 sum(retail_demo.orders_pxf.total_paid_amount::float8)
+               FROM retail_demo.customers_dim_hawq, retail_demo.orders_pxf
+               WHERE retail_demo.orders_pxf.payment_method_code='GiftCertificate' AND 
+                     retail_demo.orders_pxf.customer_id=retail_demo.customers_dim_hawq.customer_id
+               GROUP BY retail_demo.orders_pxf.customer_email_address, last_name ORDER BY last_name;
+    ```
+    
+    The `SELECT` statement above uses columns from the PXF external `orders_pxf` and HAWQ internal `customers_dim_hawq` tables to form the query. The `orders_pxf` `customer_id` field is compared with the `customers_dim_hawq` `customer_id` field to produce the orders associated with a specific customer where the `orders_pxf` `payment_method_code` identifies `GiftCertificate`.
+    
+    Query output:
+    
+    ``` pre
+                 email_address             |   last_name    |   sum    
+    ---------------------------------------+----------------+----------
+     Christopher.Aaron@phpmydirectory.com  | Aaron          |    17.16
+     Libbie.Aaron@qatarw.com               | Aaron          |   102.33
+     Jay.Aaron@aljsad.net                  | Aaron          |    72.36
+     Marybelle.Abad@idividi.com.mk         | Abad           |    14.97
+     Suellen.Abad@anatranny.com            | Abad           |   125.93
+     Luvenia.Abad@mediabiz.de              | Abad           |   107.99
+     ...
+    ```
