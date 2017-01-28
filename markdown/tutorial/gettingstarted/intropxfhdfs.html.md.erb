@@ -164,7 +164,7 @@ Perform the following steps to identify the names and email addresses of all cus
 	 hawqgsdb=#
 	 ```
 
-2. The orders HDFS data is accessible via the `orders_pxf` PXF external table created in the previous exercise. The customers_dim data is accessible via the `customers_dim_hawq` table created in a previous section. Using these HAWQ  tables, construct a query to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases:
+2. The orders HDFS data is accessible via the `orders_pxf` PXF external table created in the previous exercise. The customers\_dim data is accessible via the `customers_dim_hawq` table created in a previous section. Using these HAWQ  tables, construct a query to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases:
 
     ``` sql
     hawqgsdb=# SELECT substring(retail_demo.orders_pxf.customer_email_address for 37) AS email_address, last_name, 
