@@ -4,6 +4,8 @@ title: HAWQ Runtime Environment
 
 The _Getting Started with HAWQ_ exercises operate on a HAWQ 2.x runtime environment. This environment may be a commerical HAWQ product distribution, a HAWQ sandbox virtual machine or docker environment, or a HAWQ installation you built from source. 
 
+[Running a HAWQ Cluster](../../admin/RunningHAWQ.html) provides an overview of the components comprising a HAWQ cluster, including the users (administrative and operating), deployment systems (HAWQ master, standby, and segments), databases, and data sources.
+
 This section introduces you to the HAWQ runtime environment. You will examine your HAWQ installation, set up your HAWQ environment, and execute HAWQ management commands. If installed in your environment, you will also explore the Ambari management console.
 
 ## <a id="tut_runtime_usercred"></a>Prerequisites
@@ -18,13 +20,13 @@ The HAWQ administrative user is named `gpadmin`. This is the user account from w
 
 ## <a id="tut_runtime_setup"></a> Exercise: Set Up your HAWQ Runtime Environment
 
+HAWQ installs a script that you can use to set up your HAWQ cluster environment. The `greenplum_path.sh` script, located in your HAWQ root install directory, sets `$PATH` and other environment variables to find HAWQ files.  Most importantly, `greenplum_path.sh` sets the `$GPHOME` environment variable to point to the root directory of the HAWQ installation.  If you installed HAWQ from a product distribution or are running a HAWQ sandbox environment, the HAWQ root is typically `/usr/local/hawq`. If you built HAWQ from source or downloaded the tarball, your `$GPHOME` may differ.
+
 Perform the following steps to set up your HAWQ runtime environment:
 
 1. Install a HAWQ commercial product distribution, install a HAWQ sandbox virtual machine or docker environment, or build and install HAWQ from source. Ensure that your HAWQ installation is configured appropriately.
 
 2. Make note of the HAWQ master node hostname or IP address.
-
-3. [Running a HAWQ Cluster](../../admin/RunningHAWQ.html) provides an overview of the components comprising a HAWQ cluster. Review this topic.
 
 4.	Log in to the HAWQ master node using the `gpadmin` user credentials:
 
@@ -33,24 +35,94 @@ Perform the following steps to set up your HAWQ runtime environment:
     Password:
     ```
 
-5. Set up your HAWQ environment by performing the steps in [Procedure: Setting Up Your HAWQ Operating Environment](../../admin/setuphawqopenv.html#hawq_setupenv).
+5. Set up your HAWQ operating environment by sourcing the `greenplum_path.sh` file. If you built HAWQ from source or downloaded the tarball, substitute the path to the installed or extracted `greenplum_path.sh` file \(for example `/opt/hawq-2.1.0.0/greenplum_path.sh`\):
 
-    You must source `greenplum_path.sh` before invoking any HAWQ commands. `greenplum_path.sh` sets the `$GPHOME` environment variable to the base directory of your HAWQ installation.
+    ``` shell
+    hawq-node$ source /usr/local/hawq/greenplum_path.sh
+    ```
+    
+    `source`ing `greenplum_path.sh` sets `$GPHOME`. `source`ing `greenplum_path.sh` also sets `PATH` to include the HAWQ `$GPHOME/bin/` directory and sets `LD_LIBRARY_PATH` to include the HAWQ libraries in `$GPHOME/lib/`.
+    
+    Note: You must source `greenplum_path.sh` before invoking any HAWQ commands. 
 
-6. Examine your HAWQ installation. [HAWQ Files and Directories](../../admin/setuphawqopenv.html#hawq_env_files_and_dirs) includes a list of important files and directories and their install locations. Your `$GPHOME` may differ, based on the source (product distribution, sandbox, self-compiled) of your HAWQ installation.
+3. Edit your `.bash_profile` or other shell initialization file to source `greenplum_path.sh` on login.  For example, add:
+
+    ``` shell
+    source /usr/local/hawq/greenplum_path.sh
+    ```
+    
+4. Set HAWQ-specific environment variables relevant to your deployment in your shell initialization file. These include `PGAPPNAME`, `PGDATABASE`, `PGHOST`, `PGPORT`, and `PGUSER.` For example, if you use a custom HAWQ master port number, make this port number the default by setting the `PGPORT` environment variable in your shell initialization file; add:
+
+    ``` shell
+    export PGPORT=10432
+    ```
+    
+    Setting `PGPORT` simplifies `psql` invocation by providing a default for the `-p` (port) option.
+
+    You may choose to set additional HAWQ deployment-specific environment variables. See [Environment Variables](../reference/HAWQEnvironmentVariables.html#optionalenvironmentvariables).
+
+6. Examine your HAWQ installation:
+
+    ``` shell
+    gpadmin@master$ ls $GPHOME
+    bin  docs  etc  greenplum_path.sh  include  lib  sbin  share
+    ```
+    
+    The HAWQ command line utilities are located in `$GPHOME/bin`. `$GPHOME/lib` includes HAWQ and PostgreSQL libraries.
+
+    Refer to [HAWQ Files and Directories](../../admin/setuphawqopenv.html#hawq_env_files_and_dirs) for a list of other HAWQ files and directories and their install locations.
   
-6. View the current state of your HAWQ cluster. If it is not already running, start the cluster.
+6. View the current state of your HAWQ cluster, and if it is not already running, start the cluster. In practice, you will perform different procedures depending upon whether you manage your cluster from the command line or using Ambari.
 
-    *If you manage your HAWQ cluster from the command line*:
+    *Command line*:
 
     ``` shell
     gpadmin@master$ hawq state
+    Failed to connect to database, this script can only be run when the database is up.
+    
+    # cluster is not running, start it
     gpadmin@master$ hawq start cluster
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Prepare to do 'hawq start'
+    DATETIME hawq_start:master:gpadmin-[INFO]:-You can find log in:
+    DATETIME hawq_start:master:gpadmin-[INFO]:-/home/gpadmin/hawqAdminLogs/hawq_start_20170107.log
+    DATETIME hawq_start:master:gpadmin-[INFO]:-GPHOME is set to:
+    DATETIME hawq_start:master:gpadmin-[INFO]:-/usr/local/hawq/.
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start hawq with args: ['start', 'cluster']
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Gathering information and validating the environment...
+    DATETIME hawq_start:master:gpadmin-[INFO]:-No standby host configured
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start all the nodes in hawq cluster
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Starting master node 'sandbox.hortonworks.com'
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start master service
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Master started successfully
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start all the segments in hawq cluster
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start segments in list: ['segment1']
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Start segment service
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Total segment number is: 1
+    ........
+    DATETIME hawq_start:master:gpadmin-[INFO]:-1 of 1 segments start successfully
+    DATETIME hawq_start:master:gpadmin-[INFO]:-Segments started successfully
+    DATETIME hawq_start:master:gpadmin-[INFO]:-HAWQ cluster started successfully
+    
+    # get cluster status
+    gpadmin@master$ hawq state
+    DATETIME hawq_state:master:gpadmin-[INFO]:--HAWQ instance status summary
+    DATETIME hawq_state:master:gpadmin-[INFO]:------------------------------------------------------
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Master instance                                = Active
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   No Standby master defined                           
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total segment instance count from config file  = 1
+    DATETIME hawq_state:master:gpadmin-[INFO]:------------------------------------------------------ 
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Segment Status                                    
+    DATETIME hawq_state:master:gpadmin-[INFO]:------------------------------------------------------ 
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total segments count from catalog      = 1
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total segment valid (at master)        = 1
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total segment failures (at master)     = 0
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total number of postmaster.pid files missing   = 0
+    DATETIME hawq_state:master:gpadmin-[INFO]:--   Total number of postmaster.pid files found     = 1
     ```
 
-    *If you manage your HAWQ cluster with Ambari* start the Ambari management console:
+    *Ambari*:
     
-    1. Enter the following URL in your favorite (supported) browser window:
+    1. Start the Ambari management console by entering the following URL in your favorite (supported) browser window:
 
         ``` shell
         <ambari-server-node>:8080
@@ -60,7 +132,7 @@ Perform the following steps to set up your HAWQ runtime environment:
 
         ![Ambari Dashboard](ambariconsole.png)
  
-        After logging in, you are presented with the Ambari dashboard. The dashboard provides an at-a-glance status of the health of your HAWQ cluster. A list of each running service and it's status is displayed in the left panel. The main display area includes a set of configurable tiles providing specific information about your cluster, including HAWQ segment status, HDFS disk usage, and resource manager metrics. 
+        After logging in, the Ambari dashboard displays. The dashboard provides an at-a-glance status of the health of your HAWQ cluster. A list of each running service and it's status is provided in the left panel. The main display area includes a set of configurable tiles providing specific information about your cluster, including HAWQ segment status, HDFS disk usage, and resource manager metrics. 
         
     3. Select the **HAWQ** service from the left pane. If the HAWQ service is not running, select the **Start** operation from the **Service Actions** menu button to start your HAWQ cluster.
 

@@ -10,9 +10,9 @@ Ensure that you have performed the steps in [Set Up your HAWQ Runtime Environmen
 
 ## <a id="tut_adminsetupenv"></a> HAWQ Administrator
 
-The HAWQ `gpadmin` user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
+The HAWQ `gpadmin` administrative user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
 
-The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI.
+The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI, generally before installing HAWQ.
 
 **Note**: Although you are introduced to both in this section, command line and Ambari management modes cannot generally be mixed.
 
@@ -20,7 +20,7 @@ The HAWQ administrator will choose to manage the HAWQ cluster via the command li
 
 HAWQ configuration parameters affect the behaviour of both the HAWQ cluster and individual HAWQ nodes.  The collection of HAWQ configuration parameters and values are stored in the `$GPHOME/etc/hawq-site.xml` file. You should never directly modify the `hawq-site.xml` file.
   
-## <a id="tut_adminclustermgmt"></a>HAWQ Cluster Management - Command Line
+## <a id="tut_adminclustermgmtcli"></a>HAWQ Cluster Management - Command Line
 
 The following table identifies a subset of HAWQ management commands that are applicable to the tutorial exercises.  For detailed information on specific HAWQ management commands, refer to the [HAWQ Management Tools Reference](../../reference/cli/management_tools.html).
 
@@ -32,7 +32,8 @@ The following table identifies a subset of HAWQ management commands that are app
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Get HAWQ cluster status | `$ hawq state` |
 | Start/stop/restart HAWQ \<object\> (cluster, master, segment, standby, allsegments) | `$ hawq start <object>` <p> `$ hawq stop <object>` <p> `$ hawq restart <object>` |
-| List HAWQ configuration parameters and their current settings     | `$ hawq config --list`                                                                                         |
+| List all HAWQ configuration parameters and their current settings     | `$ hawq config --list`                                                                                         |
+| Display the current setting of a specific HAWQ configuration parameter    | `$ hawq config -s <paramname>`                                                                                         |
 | Add/change the value of HAWQ configuration parameter (command-line managed HAWQ clusters only)  | `$ hawq config -c <paramname> -v <value>`                                                                                         |
 | Reload HAWQ configuration        | `$ hawq stop cluster --reload`                                                                                         |
 
