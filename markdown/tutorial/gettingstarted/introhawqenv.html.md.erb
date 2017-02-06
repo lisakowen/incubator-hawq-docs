@@ -2,6 +2,25 @@
 title: HAWQ Runtime Environment
 ---
 
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
 The _Getting Started with HAWQ_ exercises operate on a HAWQ 2.x runtime environment. This environment may be a commerical HAWQ product distribution, a HAWQ sandbox virtual machine or docker environment, or a HAWQ installation you built from source. 
 
 [Running a HAWQ Cluster](../../admin/RunningHAWQ.html) provides an overview of the components comprising a HAWQ cluster, including the users (administrative and operating), deployment systems (HAWQ master, standby, and segments), databases, and data sources.
@@ -59,7 +78,7 @@ Perform the following steps to set up your HAWQ runtime environment:
     
     Setting `PGPORT` simplifies `psql` invocation by providing a default for the `-p` (port) option.
 
-    You may choose to set additional HAWQ deployment-specific environment variables. See [Environment Variables](../reference/HAWQEnvironmentVariables.html#optionalenvironmentvariables).
+    You may choose to set additional HAWQ deployment-specific environment variables. See [Environment Variables](../../reference/HAWQEnvironmentVariables.html#optionalenvironmentvariables).
 
 6. Examine your HAWQ installation:
 
