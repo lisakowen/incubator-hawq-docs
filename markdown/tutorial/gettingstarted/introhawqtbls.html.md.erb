@@ -1,5 +1,5 @@
 ---
-title: Introduction to HAWQ Tables
+title: Lesson 5: Introduction to HAWQ Tables
 ---
 
 <!--
@@ -217,3 +217,8 @@ zcat $DATADIR/products_dim.tsv.gz | psql -c "COPY retail_demo.products_dim_hawq 
      Luvenia.Abad@mediabiz.de              | Abad           |   107.99
      ...
     ```
+
+You created and loaded Retail data into HAWQ tables. You also queried these tables, learning to filter the data to your needs. In the next lesson, you use PXF external tables to similarly access data stored in HDFS.
+
+**Previous Lesson**: [Introduction to the Retail Data Schema](dataandscripts.html)  
+**Next Lesson**: [Introduction to the HAWQ Extension Framework (PXF)](intropxftbls.html)
