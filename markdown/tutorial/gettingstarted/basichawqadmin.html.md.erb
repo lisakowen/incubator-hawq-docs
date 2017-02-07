@@ -1,6 +1,25 @@
 ---
-title: HAWQ Cluster Administration Basics
+title: Lesson 2 - HAWQ Cluster Administration Basics
 ---
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
 
 In this tutorial section, you are introduced to basic HAWQ cluster  administration tasks. You will use the command line and Ambari Web UI to determine the state of your HAWQ cluster. You will also update a HAWQ configuration parameter.
 
@@ -10,9 +29,9 @@ Ensure that you have performed the steps in [Set Up your HAWQ Runtime Environmen
 
 ## <a id="tut_adminsetupenv"></a> HAWQ Administrator
 
-The HAWQ `gpadmin` user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
+The HAWQ `gpadmin` administrative user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
 
-The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI.
+The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI, generally before installing HAWQ.
 
 **Note**: Although you are introduced to both in this section, command line and Ambari management modes cannot generally be mixed.
 
@@ -20,7 +39,7 @@ The HAWQ administrator will choose to manage the HAWQ cluster via the command li
 
 HAWQ configuration parameters affect the behaviour of both the HAWQ cluster and individual HAWQ nodes.  The collection of HAWQ configuration parameters and values are stored in the `$GPHOME/etc/hawq-site.xml` file. You should never directly modify the `hawq-site.xml` file.
   
-## <a id="tut_adminclustermgmt"></a>HAWQ Cluster Management - Command Line
+## <a id="tut_adminclustermgmtcli"></a>HAWQ Cluster Management - Command Line
 
 The following table identifies a subset of HAWQ management commands that are applicable to the tutorial exercises.  For detailed information on specific HAWQ management commands, refer to the [HAWQ Management Tools Reference](../../reference/cli/management_tools.html).
 
@@ -32,7 +51,8 @@ The following table identifies a subset of HAWQ management commands that are app
 |-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Get HAWQ cluster status | `$ hawq state` |
 | Start/stop/restart HAWQ \<object\> (cluster, master, segment, standby, allsegments) | `$ hawq start <object>` <p> `$ hawq stop <object>` <p> `$ hawq restart <object>` |
-| List HAWQ configuration parameters and their current settings     | `$ hawq config --list`                                                                                         |
+| List all HAWQ configuration parameters and their current settings     | `$ hawq config -l`                                                                                         |
+| Display the current setting of a specific HAWQ configuration parameter    | `$ hawq config -s <paramname>`                                                                                         |
 | Add/change the value of HAWQ configuration parameter (command-line managed HAWQ clusters only)  | `$ hawq config -c <paramname> -v <value>`                                                                                         |
 | Reload HAWQ configuration        | `$ hawq stop cluster --reload`                                                                                         |
 
@@ -77,9 +97,9 @@ Perform the following steps to view the state of your HAWQ cluster:
 1. Display the value of the segment temporary directory:
 
     ``` shell
-    gpadmin@master$ hawq config --show hawq_segment_temp_directory
+    gpadmin@master$ hawq config -s hawq_segment_temp_directory
     GUC	   : hawq_segment_temp_directory
-    Value  : /tmp/hawq/segment
+    Value  : /data/hawq/tmp
     ```
 
 2. Set the HAWQ PL/Java `pljava_classpath` server configuration parameter to include the example JAR file included with HAWQ:
@@ -129,9 +149,15 @@ Perform the following steps to view the state of your HAWQ cluster on the Ambari
 
 4. Perform a HAWQ service check operation by selecting the **Run Service Check** item from the **Service Actions** button drop-down menu and **Confirm**ing the operation.
 
-    The **Background Operations Running** dialog is displayed. This dialog identifies all service-related operations performed on your HAWQ cluster.
+    ![HAWQ Service Actions](hawqsvcacts.png)
+
+    The **Background Operations Running** dialog displays. This dialog identifies all service-related operations performed on your HAWQ cluster.
+    
+    ![Ambari Background Operations](ambbgops.png)
     
 5. Select the most recent **HAWQ Service Check** operation from the top of the **Operations** column. Select the HAWQ master host name from the **HAWQ Service Check** dialog, and then select the **Check HAWQ** task.
+
+    ![HAWQ Service Check Output](hawqsvccheckout.png)
 
     The **Check HAWQ** task dialog displays the output of the service check operation. This operation returns the state of your HAWQ cluster, as well as the results of HAWQ database operation tests performed by Ambari.
 
@@ -148,11 +174,15 @@ Perform the following steps to set the HAWQ PL/Java `pljava_classpath` configura
     
 3. Select the **Advanced** tab to view additional HAWQ parameter settings.
 
+    ![HAWQ Advanced Configs](hawqcfgsadv.png)
+
     The **General** drop down pane opens. In addition to displaying master and segment port information, this pane is the configuration location for (re)setting the `gpadmin` user OS password.
     
     **Advanced \<config\>** and **Custom \<config\>** drop down panes provide access to advanced configuration settings for HAWQ and other cluster components.
     
 4. Select the **Advanced hawq-site** drop down.
+
+    ![Advanced hawq-site](advhawqsite.png)
 
     Specific HAWQ configuration parameters and values are displayed in the pane.  Hover the mouse cursor over the value field to display a tooltip description of a specific configuration parameter.
 
@@ -168,6 +198,8 @@ Perform the following steps to set the HAWQ PL/Java `pljava_classpath` configura
 
     **Key**: pljava_classpath  
     **Value**: examples.jar
+    
+    ![Add Property](addprop.png)
 
 8. **Add** the custom property, then **Save** the updated configuration, optionally providing a **Note** in the **Save Configuration** dialog.
 
@@ -175,4 +207,11 @@ Perform the following steps to set the HAWQ PL/Java `pljava_classpath` configura
 
 9. Select the orange **Restart** button to **Restart All Affected** HAWQ nodes.
 
+    ![Restart Button](orangerestart.png)
+
     You can monitor the restart operation from the **Background Operations Running** dialog.
+
+Your HAWQ cluster is installed, configured, and ready for use. In the next lesson, you are introduced to basic HAWQ database administration activities and commands.
+
+**Previous Lesson**: [HAWQ Runtime Environment](introhawqenv.html)  
+**Next Lesson**: [HAWQ Database Administration Basics](basicdbadmin.html)
