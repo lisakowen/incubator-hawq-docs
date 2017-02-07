@@ -32,7 +32,7 @@ Ensure that you have:
 
 - [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup),
 - [Created the HAWQ Tutorial Database](basicdbadmin.html#tut_ex_createdb),
-- [Downloaded the Sample Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
+- [Downloaded the Retail Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
 - [Created the Retail Data Set Schema](dataandscripts.html#tut_dsschema_ex),
 
 and that your HAWQ cluster is up and running.
@@ -216,6 +216,12 @@ zcat $DATADIR/products_dim.tsv.gz | psql -c "COPY retail_demo.products_dim_hawq 
      Marybelle.Abad@idividi.com.mk         | Abad           |    14.97
      Luvenia.Abad@mediabiz.de              | Abad           |   107.99
      ...
+    ```
+
+11. Exit the `psql` subsystem:
+
+    ``` sql
+    hawqgsdb=# \q
     ```
 
 You created and loaded Retail data into HAWQ tables. You also queried these tables, learning to filter the data to your needs. In the next lesson, you use PXF external tables to similarly access data stored in HDFS.
