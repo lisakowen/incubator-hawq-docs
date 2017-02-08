@@ -31,7 +31,7 @@ Ensure that you have:
 
 - [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup),
 - [Created the HAWQ Tutorial Database](basicdbadmin.html#tut_ex_createdb),
-- [Downloaded the Sample Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
+- [Downloaded the Retail Data and Script Files](dataandscripts.html#tut_exdownloadfilessteps),
 - [Created the Retail Data Set Schema](dataandscripts.html#tut_dsschema_ex),
 - [Created the HAWQ Retail Demo Tables](introhawqtbls.html#tut_excreatehawqtblsteps),
 
@@ -106,7 +106,7 @@ Perform the following steps to load the Retail data set into HDFS and create HAW
 
     The `FORMAT` clause of a `CREATE EXTERNAL TABLE` statement specifying the `pxf` protocol and `HdfsTextSimple` profile must identify `TEXT` format and include the `DELIMITER` character used to access the external data source. You identified a tab delimiter character above.
 
-6. Use the tutorial work files to create HAWQ external table definitions for the remainder of the Retail data set:
+6. Use the tutorial work files to create HAWQ external table definitions for the remainder of the Retail data set, then exit the `psql` subsystem:
     
     ``` shell
     gpadmin@master$ psql
@@ -167,6 +167,13 @@ Perform the following steps to load the Retail data set into HDFS and create HAW
     (3 rows)
     ```
 
+11. Exit the `psql` subsystem:
+
+    ``` sql
+    hawqgsdb=# \q
+    ```
+
+
 ## <a id="tut_excreatepxftblsteps"></a>Exercise: Query HAWQ and PXF Retail Demo Tables
 
 Often, data will reside in both HAWQ tables and external data sources. In these instances, you can use both HAWQ internal and external tables to relate and query the data.
@@ -210,9 +217,16 @@ Perform the following steps to identify the names and email addresses of all cus
      ...
     ```
 
-You created a PXF external table to access HDFS data. You also queried this external and the HAWQ tables created previously to XXX.
 
-This lesson wraps up the *Getting Started with HAWQ* tutorial. Now that you understand basic environment set-up, cluster, database, and data management activities, you are ready to administer your HAWQ cluster.
+3. Exit the `psql` subsystem:
+
+    ``` sql
+    hawqgsdb=# \q
+    ```
+    
+You created a PXF external table to access HDFS data. You also performed a query using this external and the HAWQ tables created previously, executing business logic on both both your managed and unmanaged data.
+
+This lesson wraps up the *Getting Started with HAWQ* tutorial. Now that you are familiar with basic environment set-up, cluster, database, and data management activities, you are ready to administer your HAWQ cluster.
 
 **Previous Lesson**: [Introduction to HAWQ Tables](introhawqtbls.html)  
-**Next Steps**: [Running a HAWQ Cluster](../../admin/RunningHAWQ.html)
+**Next Steps**: Review HAWQ documentation related to [Running a HAWQ Cluster](../../admin/RunningHAWQ.html).

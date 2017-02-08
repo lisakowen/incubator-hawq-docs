@@ -30,7 +30,7 @@ In this section, you are introduced to the example data set schema. You will dow
 Ensure that you have [Created the HAWQ Tutorial Database](basicdbadmin.html#tut_ex_createdb) and that your HAWQ cluster is up and running.
 
 
-## <a id="tut_exdownloadfilessteps"></a>Exercise: Download the Data and Script Files
+## <a id="tut_exdownloadfilessteps"></a>Exercise: Download the Retail Data and Script Files
 
 If not already present in your HAWQ installation environment, perform the following steps to download the sample files. These files include the sample data set and scripts.
 
@@ -126,8 +126,14 @@ Perform the following steps to create the Retail data schema:
     hawqgsdb=# CREATE SCHEMA retail_demo;
     CREATE SCHEMA
     ```
+
+3. Exit the `psql` subsystem:
+
+    ``` sql
+    hawqgsdb=# \q
+    ```
 	
-You created the `retail_demo` schema. In upcoming lessons, you create tables and other database objects in this new schema.
+You created the `retail_demo` schema. In upcoming lessons, you will  create tables and other database objects in this new schema.
 
 **Previous Lesson**: [HAWQ Database Administration Basics](basicdbadmin.html)  
 **Next Lesson**: [Introduction to HAWQ Tables](introhawqtbls.html)
