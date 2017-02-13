@@ -23,7 +23,7 @@ under the License.
 
 The _Getting Started with HAWQ_ exercises operate on an example data set that models an online retail store. This data set is provided in a set of `gzip`'d `.tsv` (tab-separated values) text files. The exercises also reference scripts and other supporting files that operate on the data set.
 
-In this section, you are introduced to the example data set schema. You will download and examine the data set and work files if they are not already present on your system.
+In this section, you are introduced to the example data set schema. You will download and examine the data set and work files if they are not already present on your system. You will also load some of the data into HDFS.
 
 ## <a id="tut_dataset_prereq"></a>Prerequisites
 
@@ -52,17 +52,17 @@ If not already present in your HAWQ installation environment, perform the follow
 4. Download the tutorial work and data files from `github`, checking out the appropriate tag/branch:
 
     ``` shell
-    gpadmin@sandbox$ git clone https://github.com/apache/incubator-hawq-samples.git  ?? REPLACE WITH REAL REPO NAME ??
-    gpadmin@sandbox$ cd incubator-hawq-samples
+    gpadmin@sandbox$ git clone https://github.com/pivotalsoftware/hawq-samples.git
+    gpadmin@sandbox$ cd hawq-samples
     gpadmin@sandbox$ git checkout hawq<version>_getstart
     ```
     
-    where \<version\> identifies the current major version of HAWQ i.e. `hawq2.x_getstart`.
+    where \<version\> identifies the current major version of HAWQ i.e. `hawq2x_getstart`.
    
 5. Save the path to the work files base directory:
 
     ``` shell
-    gpadmin@sandbox$ export HAWQGSBASE=/tmp/hawq_getstart/incubator-hawq-samples
+    gpadmin@sandbox$ export HAWQGSBASE=/tmp/hawq_getstart/hawq-samples
     ```
     
     (If you chose a different base work directory, modify the command as appropriate.) 
@@ -70,18 +70,16 @@ If not already present in your HAWQ installation environment, perform the follow
 6. Add the `$HAWQGSBASE` environment variable setting to your `.bash_profile`.
     
     
-## <a id="tut_examinefilessteps"></a>Examine the Tutorial Files
-
-Exercises in this guide reference data files and SQL, shell, and perl scripts residing in the incubator-hawq-samples repository.  Specifically:
+7. Examine the Tutorial Files - Exercises in this guide reference data files and SQL, shell, and perl scripts residing in the incubator-hawq-samples repository.  Specifically:
   
-| Directory                                                    | Content                                                                                                                                                                                            |
-|----------------------------------------|----------------------------------------------------------------------------------|
-| datasets/retail/ | Retail demo data set data files (`.tsv.gz` format) |
-| tutorials/getstart        | *Getting Started with HAWQ* guide work files |
-| tutorials/getstart/hawq/  | SQL and shell scripts used by the HAWQ tables exercises                    |
-| tutorials/getstart/pxf/   | SQL and shell scripts used by the PXF exercises                                                                                                                                                                                 |
+    | Directory                                                    | Content                                                                                                                                                                                            |
+    |----------------------------------------|----------------------------------------------------------------------------------|
+    | datasets/retail/ | Retail demo data set data files (`.tsv.gz` format) |
+    | tutorials/getstart        | *Getting Started with HAWQ* guide work files |
+    | tutorials/getstart/hawq/  | SQL and shell scripts used by the HAWQ tables exercises                    |
+    | tutorials/getstart/pxf/   | SQL and shell scripts used by the PXF exercises                                                                                                                                                                                 |
 
-`incubator-hawq-samples` repository directories not mentioned in the table above are not used by the *Getting Started with HAWQ* guide.
+    `hawq-samples` repository directories not mentioned in the table above are not used by the *Getting Started with HAWQ* guide.
 
 
 ## <a id="tut_datasetschema"></a>Retail Data Set
@@ -118,7 +116,7 @@ Perform the following steps to create the Retail data schema:
     hawqgsdb=#
     ```
     
-    You should be connected to the `hawqgsdb` database.
+    You are connected to the `hawqgsdb` database.
 
 2. Create a schema named `retail_demo` to represent the Retail data set:
 
@@ -132,8 +130,34 @@ Perform the following steps to create the Retail data schema:
     ``` sql
     hawqgsdb=# \q
     ```
+
+## <a id="tut_loadhdfs_ex"></a>Exercise: Load the Dimension Data to HDFS
+
+A fact table consists of business facts. Dimension tables provide descriptive information for the measurements in a fact table. Perform the following steps to load the Retail dimension data into HDFS for later consumption:
+
+1. Navigate to the PXF script directory:
+
+    ``` shell
+    gpadmin@master$ cd $HAWQGSBASE/tutorials/getstart/pxf
+    ```
+
+2. Using the provided script, load the sample data files representing dimension data into HDFS. You will load the data to the HDFS `/retail_demo` directory: 
+
+    ``` shell
+    gpadmin@master$ ./load_data_to_HDFS.sh
+    ```
 	
-You created the `retail_demo` schema. In upcoming lessons, you will  create tables and other database objects in this new schema.
+	 `load_to_HDFS.sh` loads the dimension data `.tsv.gz` files directly into HDFS. Each file is loaded to it's respective `/retail_demo/<basename>/<basename>.tsv.gz` path.
+	 
+3. View the HDFS `/retail_demo` directory hierarchy:
+
+    ``` shell
+    gpadmin@master$ sudo -u hdfs hdfs dfs -ls /retail_demo/*
+    ```
+
+## <a id="tut_dataset_summary"></a>Summary
+
+You created the `retail_demo` schema and loaded some the Retail dimension data into HDFS. In upcoming lessons, you will create and query HAWQ internal and externtal tables in this new schema.
 
 **Previous Lesson**: [HAWQ Database Administration Basics](basicdbadmin.html)  
 **Next Lesson**: [Introduction to HAWQ Tables](introhawqtbls.html)
