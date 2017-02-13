@@ -21,23 +21,18 @@ specific language governing permissions and limitations
 under the License.
 -->
 
+The HAWQ `gpadmin` administrative user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands. The HAWQ administrator will choose to configure and manage the HAWQ cluster via the command line or via the Ambari UI, generally before installing HAWQ.
+
+**Note**: Although you are introduced to both in this section, command line and Ambari management modes should not be mixed.
+
+HAWQ configuration parameters affect the behaviour of both the HAWQ cluster and individual HAWQ nodes.  The collection of HAWQ configuration parameters and values are stored in the `$GPHOME/etc/hawq-site.xml` file. You should never directly modify the `hawq-site.xml` file.
+
 In this tutorial section, you are introduced to basic HAWQ cluster  administration tasks. You will use the command line and Ambari Web UI to determine the state of your HAWQ cluster. You will also update a HAWQ configuration parameter.
 
 ## <a id="tut_adminprereq"></a> Prerequisites
 
 Ensure that you have performed the steps in [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup) and that your HAWQ cluster is up and running.
 
-## <a id="tut_adminsetupenv"></a> HAWQ Administrator
-
-The HAWQ `gpadmin` administrative user has super-user capabilities on all HAWQ databases and HAWQ cluster management commands.
-
-The HAWQ administrator will choose to manage the HAWQ cluster via the command line or via the Ambari UI, generally before installing HAWQ.
-
-**Note**: Although you are introduced to both in this section, command line and Ambari management modes cannot generally be mixed.
-
-## <a id="tut_adminclustermgmthcfg"></a>HAWQ Configuration Parameters
-
-HAWQ configuration parameters affect the behaviour of both the HAWQ cluster and individual HAWQ nodes.  The collection of HAWQ configuration parameters and values are stored in the `$GPHOME/etc/hawq-site.xml` file. You should never directly modify the `hawq-site.xml` file.
   
 ## <a id="tut_adminclustermgmtcli"></a>HAWQ Cluster Management - Command Line
 
@@ -213,6 +208,7 @@ Perform the following steps to set the HAWQ PL/Java `pljava_classpath` configura
 
 10. Log out of the Ambari console by clicking the **admin** button and selecting the **Sign out** drop down menu item.
 
+## <a id="tut_hawqadmin_summary"></a>Summary
 
 Your HAWQ cluster is installed, configured, and ready for use. In the next lesson, you are introduced to basic HAWQ database administration activities and commands.
 

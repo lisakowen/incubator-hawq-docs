@@ -21,6 +21,10 @@ specific language governing permissions and limitations
 under the License.
 -->
 
+The HAWQ database administrator, and those users specifically granted the privileges, can execute SQL commands to create HAWQ databases and tables. These commands may be invoked via scripts, programs, and from the `psql` subsystem.
+
+For specific information on SQL command support in HAWQ, refer to the [SQL Command](../../reference/SQLCommandReference.html) reference.
+
 In this tutorial section, you are introduced to basic HAWQ database administration commands and tasks. You will create a database and a simple table, and add data to and query the table.
 
 ## <a id="tut_adminprereq"></a> Prerequisites
@@ -28,11 +32,7 @@ In this tutorial section, you are introduced to basic HAWQ database administrati
 Ensure that you have performed the steps in [Set Up your HAWQ Runtime Environment](introhawqenv.html#tut_runtime_setup) and that your HAWQ cluster is up and running.
 
 
-## <a id="tut_admindbaccess"></a>HAWQ Database Management
-
-The HAWQ database administrator, and those users specifically granted the privileges, can create HAWQ databases and tables.
-
-### <a id="tut_admindbaccesscmds"></a>Database Management Commands
+## <a id="tut_admindbaccesscmds"></a>Database Management Commands
 
 HAWQ databases and roles can be created and deleted from the command line by authorized users.
 
@@ -67,7 +67,7 @@ HAWQ databases and roles can be created and deleted from the command line by aut
     
 3. Add the `PGDATABASE` setting to your `.bash_profile`.
 
-### <a id="tut_admindbaccesspsql"></a>psql
+## <a id="tut_admindbaccesspsql"></a>psql
 
 You can also manage and access HAWQ databases via the `psql` utility, an interactive front-end to the HAWQ database.  Commonly-used `psql` meta commands include:
 
@@ -80,14 +80,6 @@ You can also manage and access HAWQ databases via the `psql` utility, an interac
 | Quit/Exit    | `\q`                                                                                         |
 
 For detailed information on the `psql` subsystem, refer to the [psql](../../reference/cli/client_utilities/psql.html) reference page.
-
-
-### <a id="tut_admindbsql"></a>SQL
-
-You will execute SQL commands on HAWQ objects, including databases and tables. These commands may be invoked via scripts, programs, and from the `psql` subsystem.
-
-For specific information on SQL command support in HAWQ, refer to the [SQL Command](../../reference/SQLCommandReference.html) reference.
-
 
 ### <a id="tut_ex_usepsql"></a>Exercise: Use psql to Create, Add Data to, and Query a Simple HAWQ Table
 
@@ -203,8 +195,9 @@ For specific information on SQL command support in HAWQ, refer to the [SQL Comma
     ```
    
     Again, you could have omitted the `-d hawqgsdb` option, as you had previously set `PGDATABASE`.
-
-You just created the database you will use in upcoming lessons. You also created, inserted data into, and queried a simple HAWQ table. Next, you are introduced to the Retail data set, a more complicated data schema used in upcoming lessons.
+    
+## <a id="tut_dbadmin_summary"></a>Summary
+You just created the database you will use in later exercises. You also created, inserted data into, and queried a simple HAWQ table. Next, you are introduced to the Retail data set, a more complicated data schema used in upcoming lessons.
 
 **Previous Lesson**: [HAWQ Cluster Administration Basics](basichawqadmin.html)  
 **Next Lesson**: [Introduction to the Retail Data Schema](dataandscripts.html)
