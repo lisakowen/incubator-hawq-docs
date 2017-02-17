@@ -141,7 +141,7 @@ A fact table consists of business facts. Dimension tables provide descriptive in
     gpadmin@master$ cd $HAWQGSBASE/tutorials/getstart/pxf
     ```
 
-2. Using the provided script, load the sample data files representing dimension data into HDFS. You will load the data to the HDFS `/retail_demo` directory: 
+2. Using the provided script, load the sample data files representing dimension data into HDFS. You will load the data to the  `/retail_demo` HDFS directory. Note that the `/retail_demo` directory and contents are removed before the script loads the data: 
 
     ``` shell
     gpadmin@master$ ./load_data_to_HDFS.sh
@@ -157,7 +157,7 @@ A fact table consists of business facts. Dimension tables provide descriptive in
 
 ## <a id="tut_dataset_summary"></a>Summary
 
-You created the `retail_demo` schema and loaded some the Retail dimension data into HDFS. In upcoming lessons, you will create and query HAWQ internal and externtal tables in this new schema.
+You created the `retail_demo` schema and loaded the Retail dimension data into HDFS. In upcoming lessons, you will create and query HAWQ internal and external tables in this new schema.
 
 **Previous Lesson**: [HAWQ Database Administration Basics](basicdbadmin.html)  
 **Next Lesson**: [Introduction to HAWQ Tables](introhawqtbls.html)

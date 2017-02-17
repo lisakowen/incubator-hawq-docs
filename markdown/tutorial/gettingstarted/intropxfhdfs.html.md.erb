@@ -143,10 +143,6 @@ Perform the following steps to create HAWQ external table definitions to access 
 
 8. Run the following query on the `customers_dim_pxf` and `customer_addresses_dim_pxf` tables to display the names of all male customers in the 06119 zip code:
 
-    ``` shell
-    $ psql
-    ```
-    
     ``` sql
     hawqgsdb=# SELECT last_name, first_name
                  FROM retail_demo.customers_dim_pxf, retail_demo.customer_addresses_dim_pxf
@@ -176,9 +172,9 @@ Perform the following steps to create HAWQ external table definitions to access 
 
 ## <a id="tut_exhawqpxfquerysteps"></a>Exercise: Query HAWQ and PXF Retail Demo Tables
 
-Often, data will reside in both HAWQ tables and external data sources. In these instances, you can use both HAWQ internal and external tables to relate and query the data.
+Often, data will reside in both HAWQ tables and external data sources. In these instances, you can use both HAWQ internal and PXF external tables to relate and query the data.
 
-Perform the following steps to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases. The orders fact data resides in a HAWQ-managed table and the customers data in HDFS.
+Perform the following steps to identify the names and email addresses of all customers who made gift certificate purchases, including providing an overall order total for such purchases. The orders fact data resides in a HAWQ-managed table and the customers data resides in HDFS.
 
 1. Start the `psql` subsystem:
 
@@ -229,4 +225,4 @@ You created PXF external tables to access HDFS data and queried these tables. Yo
 This lesson wraps up the *Getting Started with HAWQ* tutorial. Now that you are familiar with basic environment set-up, cluster, database, and data management activities, you are ready to administer your HAWQ cluster.
 
 **Previous Lesson**: [Introduction to HAWQ Tables](introhawqtbls.html)  
-**Next Steps**: Review HAWQ documentation related to [Running a HAWQ Cluster](../../admin/RunningHAWQ.html).
+**Next Steps**: View HAWQ documentation related to [Running a HAWQ Cluster](../../admin/RunningHAWQ.html).
