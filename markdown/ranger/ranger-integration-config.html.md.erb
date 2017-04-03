@@ -147,20 +147,11 @@ gpadmin@master$ /usr/local/hawq/ranger/bin/rps.sh stop
 gpadmin@master$ /usr/local/hawq/ranger/bin/rps.sh start
 ```
 
-### <a id="caching"></a>Changing the Frequency of Policy Caching
- 
-The default polling interval for HAWQ Ranger Plug-in Service policy updates is 30 seconds. To increase or decrease this value, update the `ranger.plugin.hawq.policy.pollIntervalMs` property setting in the `ranger-hawq-security.xml` file:
+## <a id="troubleshoot"></a> Troubleshooting Ranger Configuration
 
-<pre>
-&lt;property&gt;
-    &lt;name&gt;ranger.plugin.hawq.policy.pollIntervalMs&lt;/name&gt;
-    <b>&lt;value&gt;30000&lt;/value&gt;</b>
-    &lt;description&gt;
-        How often to poll for changes in policies?
-    &lt;/description&gt;
-&lt;/property&gt;
-</pre>
+If resource name lookup is not working in the Ranger Admin UI:
 
-Provide a value in milliseconds.
+1. Verify that the HAWQ Ranger plug-in JARs and JDBC driver have been copied to \<ranger-admin-node\>.
+2. Test the connection between the Ranger Admin UI and the HAWQ master node by clicking the edit icon associated with the active HAWQ service definition, then clicking the **Config Properties: > Test Connection** button.
+3. Verify that the HAWQ master node `pg_hba.conf` file includes a `host` entry for \<ranger-admin-node\>, HAWQ user (typically `gpadmin`).
 
-You must restart the HAWQ Ranger Plug-in Service as described above after updating the polling interval.
