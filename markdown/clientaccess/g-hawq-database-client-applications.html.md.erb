@@ -21,7 +21,13 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-HAWQ comes installed with a number of client utility applications located in the `$GPHOME/bin` directory of your HAWQ master host installation. The following are the most commonly used client utility applications:
+HAWQ is pre-installed with a number of client utility applications. You can also run client applications in your HAWQ deployment created using standard ODBC/JDBC Application Interfaces.
+
+Alternatively, you may want to provide access to your HAWQ master node from a Linux client outside of your HAWQ cluster. One option to enable this access is to install the full HAWQ binary on the client node. A second option is to create a minimal `psql` client package from an existing HAWQ installation which you could then install on a non-HAWQ client. Refer to [User-Created HAWQ psql Client](hawq-client-pkg.html) for instructions on creating, installing, and running such a package.
+
+## <a id="hawqclient_pkg_run"></a>HAWQ-Installed Client Applications
+
+HAWQ is installed with a number of client utility applications. These applications are located in the `$GPHOME/bin` directory of your HAWQ master host installation. The following client utility applications are the most commonly used:
 
 |Name|Usage|
 |----|-----|

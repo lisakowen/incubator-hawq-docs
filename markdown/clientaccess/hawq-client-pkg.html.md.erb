@@ -1,0 +1,131 @@
+---
+title: User-Created HAWQ psql Client
+---
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+You may choose to provide `psql` access to your HAWQ master node from a non-HAWQ Linux client. This section describes the procedures for creating, installing, and running a minimal HAWQ `psql` client package.
+
+## <a id="hawqpsqlclient_pkg_create"></a>Create the HAWQ psql Client Package
+
+Perform the following steps to create a HAWQ Linux `psql` client package:
+
+1. Log in to a HAWQ node and set up your HAWQ environment:
+
+    ``` shell
+    $ ssh gpadmin@<hawq-node>
+    gpadmin@hawq-node$ . /usr/local/hawq/greenplum_path.sh
+    ```
+    
+    **Note**: You can create the client package on any node on which HAWQ is installed.
+    
+2. Create working directories:
+
+    ``` shell
+    gpadmin@hawq-node$ mkdir hawqclient
+    gpadmin@hawq-node$ cd hawqclient
+    gpadmin@hawq-node$ export HAWQCLIENTWORKDIR=`pwd`
+    gpadmin@hawq-node$ mkdir bin
+    gpadmin@hawq-node$ mkdir lib
+    ```
+    
+3. Copy the HAWQ `psql` client binary and libraries to the appropriate work directories:
+
+    ``` shell
+    gpadmin@hawq-node$ cp $GPHOME/bin/psql $HAWQCLIENTWORKDIR/bin/
+    gpadmin@hawq-node$ cp -d $GPHOME/lib/libpq.* $HAWQCLIENTWORKDIR/lib/
+    ```
+
+4. Generate a runtime environment file for the HAWQ client package:
+
+    ``` shell
+    gpadmin@hawq-node$ echo 'HAWQ_CLIENT=`pwd`
+    export PATH=$HAWQ_CLIENT/bin:$PATH
+    export LD_LIBRARY_PATH=$HAWQ_CLIENT/lib:$LD_LIBRARY_PATH' > ./hawq_client_env.sh
+    ```
+    
+    The `hawq_client_env.sh` file sets `$PATH` and `$LD_LIBRARY_PATH` appropriately for a HAWQ client runtime environment.
+    
+5. Tar and compress the HAWQ client package:
+
+    ``` shell
+    gpadmin@hawq-node$ cd $HAWQCLIENTWORKDIR/../
+    gpadmin@hawq-node$ tar czvf hawqclient.tar.gz ./hawqclient
+    ```
+    
+    You create a `hawqclient.tar.gz` file in the current directory.
+
+## <a id="hawqclient_pkg_install"></a>Install the HAWQ psql Client Package
+
+Perform the following steps to install the HAWQ `psql` client package you created in the previous section on a like Linux-based system:
+
+1. Log in to the client system and create or navigate to the directory in which you want to install the HAWQ client:
+
+    ``` shell
+    $ ssh <user>@<client>
+    user@client$ cd <installdir>
+    user@client$ export HAWQCLIENTINSTDIR=`pwd`
+    ```
+    
+    Make note of the base HAWQ client install directory, you will need this path to run the client.
+
+2. Copy the package to the client system:
+
+    ``` shell
+    user@client$ scp gpadmin@hawq-node:/<dir>/hawqclient.tar.gz .
+    ```
+
+3. Extract the package:
+
+    ``` shell
+    user@client$ tar xzf hawqclient.tar.gz
+    ```
+    
+    You extract the HAWQ client to `./hawqclient`.
+    
+3. Clean up:
+
+    ``` shell
+    user@client$ rm hawqclient.tar.gz
+    ```
+
+## <a id="hawqclient_pkg_run"></a>Run the HAWQ psql Client
+
+Perform the following steps to run a previously-installed HAWQ `psql` client package:
+
+1. Source the client environment file (recall the HAWQ client install directory you noted in the previous section):
+
+    ``` shell
+    user@client$ . $HAWQCLIENTINSTDIR/hawqclient/hawq_client_env.sh
+    ```
+    
+    `hawq_client_env.sh` sets up the HAWQ client runtime environment, including setting your `$PATH` and `$LD_LIBRARY_PATH` to locate the `psql` client binaries and libraries.
+
+2. Start the `psql` client. You must identify the HAWQ master hostname. You may also be required to provide the HAWQ master port number if the process is not running on the default port. Provide these values via environment variables or on the command line:
+
+    ``` shell
+    user@client$ PGHOST=<master-host> PGPORT=<master-port> psql -d <database-name>
+    ```
+    
+    Or:
+    
+    ``` shell
+    user@client$ psql -d <database-name> -h <master-host> -p <master-port>
+    ```
