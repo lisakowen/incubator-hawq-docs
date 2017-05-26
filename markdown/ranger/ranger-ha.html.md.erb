@@ -1,5 +1,5 @@
 ---
-title: High Availability with HAWQ Ranger
+title: High Availability and HAWQ Ranger
 ---
 
 <!--
@@ -43,6 +43,3 @@ After failover to the standby Ranger Plug-in Service, the HAWQ master periodical
 If the HAWQ master node goes down, you will activate the master standby node, at which time the standby becomes the new HAWQ master. When the HAWQ master fails over in this manner, the master Ranger Plug-in Service also fails over to the standby node.
 
 After activating a HAWQ standby master node, you must manually update the Ranger HAWQ service definition with the new HAWQ master node connection information. Update this information via the Ranger UI.
-
-??INCLUDE SCREEN CAPTURE OF HAWQ SERVICE DEF??
-
