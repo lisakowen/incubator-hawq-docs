@@ -1,0 +1,133 @@
+---
+title: HAWQ Ranger Kerberos Integration
+---
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+When you have enabled Ranger Authorization for HAWQ, your HAWQ installation includes the Ranger Administrative UI and HAWQ Ranger Plug-in Service.
+
+To enable HAWQ Ranger Kerberos authentication, you must configure Kerberos support for:
+
+- HAWQ user authentication
+- Ranger Administration host lookup of HAWQ resources during policy definition 
+- HAWQ Ranger Plug-in Service communication with the Ranger Administration host for policy checks
+
+Use the following procedures to configure Kerberos support for your Ranger-authorized HAWQ cluster.
+
+## Prerequisites <a id="kerb_ranger_prereq"></a>
+
+Before you enable Kerberos for your Ranger-authorized HAWQ cluster, ensure that you have:
+
+- Noted the host name or IP address of your Ranger Administration Host (\<ranger-admin\>) and HAWQ master (\<master\>) nodes.
+- Set up your Kerberos Key Distribution Center (KDC) as described in [Step 2: Install and Configure a Kerberos KDC Server](../clientaccess/kerberos.html#task_setup_kdc) or identify an existing KDC.
+    - Note the host name or IP address of your KDC (\<kdc-server\>).
+    - Note the name of the Kerberos \<realm\> in which your cluster resides.
+- Enabled Ranger Authorization for HAWQ. See [XXX]().
+- Configured Kerberos authentication for HAWQ user access as described in [Step 4a: Configure Kerberos User Authentication for HAWQ](../clientaccess/kerberos.html#hawq_kerb_cfg).
+- Installed the Java Cryptography Extension (JCE) on all nodes in your cluster. 
+    - If you manage your cluster with Ambari, the JCE was installed on each node when you enabled Kerberos with the Ambari **Kerberos Security Wizard**. 
+    - If you manage your cluster from the command line, you must manually install the extension on all nodes in your HAWQ cluster.
+
+
+## Configure Ranger Admin Host for Kerberized HAWQ <a id="ra2hawq_kerb_cfg"></a>
+
+The Ranger Administration Host connects to HAWQ to look up resource names during policiy definition. When Kerberos user authentication is enabled for HAWQ, this access must be kerberized as well.
+
+To configure Ranger access to a kerberized HAWQ cluster, you must:
+
+- Create a Kerberos-authorized HAWQ role for Ranger lookup of HAWQ resources
+- Generate a Kerberos principal for the new Ranger lookup role
+- Configure the Ranger HAWQ service definition to use the new Ranger lookup role
+
+### Procedure <a id="kerb_ra2hawq_proc"></a>
+
+Perform the following steps to enable the Ranger Administration Host to look up resources in your kerberized HAWQ cluster. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
+
+1. Log in to the HAWQ master node and set up your environment:
+
+    ``` shell
+    $ ssh gpadmin@<master>
+    gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
+    ```
+
+2. Create a HAWQ administrative role for Ranger resource lookup:
+
+    ``` shell
+    gpadmin@master$ psql -c 'CREATE ROLE "rangerlookup/kerberos" with LOGIN SUPERUSER;' 
+    ```
+   
+    You may choose a different name for the Ranger lookup role.
+
+3. Log in to the KDC server system and generate a keytab entry for the HAWQ `rangerlookup/kerberos` principal. Substitute your Kerberos \<realm\>. For example:
+
+    ``` shell
+    $ ssh root@<kdc-server>
+    root@kdc-server$ kadmin.local -q "addprinc -pw changeme rangerlookup/kerberos@REALM”
+    ```
+    
+    You do not need to generate a keytab file because you will manually enter the `rangerlookup/kerberos` password in the Ranger Adminin UI HAWQ Service definition page.
+
+4. ?? Configure policies for the new role ??
+
+#### Configure and Verify Connectivity <a id="kerb_ra2hawq_verify"></a>
+
+Perform the following steps to configure and verify Kerberos connectivity between the Ranger Administration host and HAWQ using the new Ranger lookup role. 
+
+1. Start the Ranger Admin UI by navigating to \<ranger-admin\>:6080 in a supported web browser. 
+
+2. Locate the HAWQ service definition and select the **Edit** button. 
+
+3. Fill out the **Config Properties** fields:
+
+    **HAWQ User Name*** - The HAWQ Ranger lookup role name you created in Step N.  
+    **HAWQ User Password*** - The password you assigned to the HAWQ Ranger lookup role principal.  
+    **HAWQ Authentication Type** - Select **Kerberos** from the drop-down list.  
+    **HAWQ Kerberos Service Name** - `postgres`  
+    **HAWQ Master Hostname*** - The HAWQ master node host name or IP address.  
+    **HAWQ Master Port*** - The HAWQ master port number.  
+ 
+3. Click the **Test Connection** button. If you connected successfully, Ranger displays a dialog with the message:
+
+    ``` pre
+    Connected Successfully.
+    ```
+
+    You successfully configured HAWQ Ranger resource lookup to use Kerberos authentication.
+
+4. **Save** your changes to permanently configure Kerberos authentication for HAWQ Ranger.
+
+
+## Configure HAWQ Ranger for Kerberized Ranger Administration Host<a id="rps2ra_kerb_cfg"></a>
+
+DISCUSS THIS:
+
+steps so far:
+
+- Add `postgres` user (Admin, external) in Ranger UI
+- JCE - FOR CMDLINE MANAGED CLUSTERS - HERE OR BEFORE??
+- create spnego principal (HTTP/<FQDN_OF_Ranger_Admin_Cluster>@<REALM>) - fqdn is ranger proxy if HA enabled - IS THIS ALREADY DONE IF AMBARI MANAGED CLUSTER?
+
+
+### Procedure <a id="kerb_rps2ra_proc"></a>
+
+
+1. step1
+	
+2. step2
