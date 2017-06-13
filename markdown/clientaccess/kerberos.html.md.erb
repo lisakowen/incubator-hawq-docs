@@ -30,35 +30,340 @@ HAWQ supports Kerberos user authentication with the Generic Security Service App
 
 Kerberos provides a secure, encrypted authentication service. It does not encrypt data exchanged between the client and database and provides no authorization services. To encrypt data exchanged over the network, you must use an SSL connection. To manage authorization for access to HAWQ databases and objects such as schemas and tables, you use settings in the `pg_hba.conf` file and privileges assigned to HAWQ users and roles. For information about managing authorization privileges, see [Overview of HAWQ Authorization](hawq-access-checks.html).
 
-
-## <a id="nr166539"></a>Enabling Kerberos Authentication for HAWQ 
-
-You will perform the following tasks, in order, to set up Kerberos authentication with HAWQ:
-
-1.  Verify that your system satisfies the prerequisites for using Kerberos with HAWQ. See [Step 1: Requirements for Using Kerberos with HAWQ](#kerberos_prereq).
-2.  Set up, or identify an existing Kerberos Key Distribution Center \(KDC\) server you (will) use for authentication. See [Step 2: Install and Configure a Kerberos KDC Server](#task_setup_kdc).
-3.  If you choose to enable Kerberos at the HDFS filesystem level, create and deploy principals for your HDFS cluster, and ensure that Kerberos authentication is enabled and functioning for all HDFS services. You will create and deploy principals for the HDFS client HAWQ and PXF services in [Step 3: Configure HAWQ/PXF for Kerberized HDFS](#task_kerbhdfs).
-4. If you choose to configure Kerberos user authentication for HAWQ, you must: 
-    1. Create a principal for the HAWQ master database process and configure HAWQ to use Kerberos authentication for user access. See [Step 4a: Configure HAWQ for Kerberos User Authentication](#hawq_kerb_cfg)
-    2. Create and distribute Kerberos principals and keytabs for HAWQ users. See [Step 4b: Configure Kerberos-Authenticated HAWQ Users](#hawq_kerb_user_cfg).
-    3. Authenticate access to the kerberized HAWQ. See [Step 4c: Authenticate User Access to HAWQ](#hawq_kerb_dbaccess).
-
-    With Kerberos configured for your HAWQ cluster, you can use Kerberos authentication for PSQL, JDBC, and Ranger client access.
-
-[Set up HAWQ with Kerberos for JDBC](#topic9)
-
-## <a id="kerberos_prereq"></a>Step 1: Requirements for Using Kerberos with HAWQ 
+## <a id="kerberos_prereq"></a>Prerequisites 
 
 Before configuring Kerberos authentication for HAWQ, ensure that:
 
 -   System time on the Kerberos server and HAWQ hosts is synchronized. \(For example, install the `ntp` package on both servers.\)
 -   Network connectivity exists between the Kerberos server and all nodes in the HAWQ cluster.
 -   Java 1.7.0\_17 or later is installed ??WHERE??. Java 1.7.0_17 is required to use Kerberos-authenticated JDBC on Red Hat Enterprise Linux 6.x or 7.x.
+-   You can identify the Kerberos Key Distribution Center \(KDC\) server you  use for authentication. See [Appendix: Install and Configure a Kerberos KDC Server](#task_setup_kdc) if you have not yet set up your KDC.
+
+## <a id="nr166539"></a>Enabling Kerberos Authentication for HAWQ 
+
+You will perform the following tasks to set up Kerberos authentication with HAWQ:
+
+1.  Identify our Kerberos Key Distribution Center \(KDC\) server.
+2.  If you choose to enable Kerberos at the HDFS filesystem level, you must create and deploy principals for your HDFS cluster, and ensure that Kerberos authentication is enabled and functioning for all HDFS client services, including HAWQ and PXF. See [Configure HAWQ/PXF for Kerberized HDFS](#task_kerbhdfs).
+3. If you choose to configure Kerberos user authentication for HAWQ, you must: 
+    1. Create a principal for the HAWQ master database process and configure HAWQ to use Kerberos authentication for user access. See [Configure HAWQ for Kerberos User Authentication](#hawq_kerb_cfg)
+    2. Create and distribute Kerberos principals and keytabs for HAWQ users. See [Configure Kerberos-Authenticated HAWQ Users](#hawq_kerb_user_cfg).
+    3. Authenticate access to the kerberized HAWQ. See [Authenticate User Access to HAWQ](#hawq_kerb_dbaccess).
+
+    With Kerberos configured for your HAWQ cluster, you can use Kerberos authentication for PSQL, JDBC, and Ranger client access.
+
+[Set up HAWQ with Kerberos for JDBC](#topic9)
 
 
-## <a id="task_setup_kdc"></a>Step 2: Install and Configure a Kerberos KDC Server 
+### <a id="task_kerbhdfs"></a>Configure HAWQ/PXF for Kerberized HDFS
 
-**Note:** If your installation already has a KDC server, you do not need to perform this procedure. Take note of the KDC server host name or IP address and the name of the realm in which your cluster resides. You will need this information in later steps.
+Both Kerberos and Hadoop are complex subsystems. Detailing the Kerberos configuration for your Hadoop cluster is beyond the scope of this document. 
+
+#### <a id="task_kerbhdfs_ambarimgd"></a>Procedure for Ambari-Managed Clusters
+
+If you manage your cluster with Ambari, you will enable Kerberos authentication for your cluster as described in the [Enabling Kerberos Authentication Using Ambari](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.5.3/bk_security/content/configuring_amb_hdp_for_kerberos.html) Hortonworks documentation. The Ambari **Kerberos Security Wizard** guides you through the kerberization process, including installing Kerberos packages on cluster nodes, syncing Kerberos configuration files, updating cluster configuration, and creating and distributing the Kerberos principals and keytab files for your Hadoop cluster services, including HAWQ and PXF. 
+
+Ensure that you have installed the Java Cryptography Extension (JCE) on all nodes in your cluster as described in the [Install the JCE](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.5.3/bk_security/content/_distribute_and_install_the_jce.html) section of the Hortonworks document. 
+
+#### <a id="task_kerbhdfs_cmdlinemgd"></a>Procedure for Command-Line-Managed Clusters
+
+If you manage your cluster from the command line, you will enable Kerberos for your Hadoop cluster per the instructions for your specific distribution. Verify the configuration.
+
+Additionally, ensure that:
+
+- The `/etc/krb5.conf` Kerberos configuration file on the KDC server node is distributed to **each** HAWQ and PXF cluster node. For example:
+
+    ``` shell
+    $ ssh root@<hawq-node>
+    root@hawq-node$ cp /etc/krb5.conf /save/krb5.conf.save
+    root@hawq-node$ scp <kdc-server>:/etc/krb5.conf /etc/krb5.conf
+    ```
+
+- The Kerberos client packages are installed on **each** HAWQ and PXF node.
+
+    ``` shell
+    root@hawq-node$ yum install krb5-libs krb5-workstation
+    ```
+
+- You have created a HAWQ service principal and generated and distributed the keytab file to the HAWQ master node. 
+
+- You have created a PXF service principal and generated and distributed the keytab file to **each** PXF node. 
+
+
+### <a id="hawq_kerb_cfg"></a>Configure Kerberos User Authentication for HAWQ
+
+You can configure HAWQ to require Kerberos authentication for user access to HAWQ databases. When HAWQ uses Kerberos for user authentication, it uses a standard principal to connect to the KDC. The format of this principal is `postgres/<FQDN_of_master>@<realm>`, where \<FQDN\_of\_master\> refers to the fully qualified distinguish name of the HAWQ master node.
+
+The procedure to configure Kerberos user authentication for HAWQ includes:
+
+- Generating a Kerberos principal and keytab entry for the `postgres` process on the HAWQ master node
+- Configuring HAWQ to use the new keytab file
+- Updating the HAWQ `pg_hba.conf` configuration file to specify Kerberos authentication
+- Restarting the HAWQ cluster
+
+#### Procedure <a id="hawq_kerb_cfg_proc"></a>
+
+Perform the following steps to configure Kerberos authentication for HAWQ. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
+
+1. Log in to the KDC server system:
+
+    ``` shell
+    $ ssh root@<kdc-server>
+    ```
+
+2. Generate a keytab entry for the HAWQ `postgres` principal using the `kadmin.local` command. Substitute the HAWQ master node fully qualified distinguished hostname and your Kerberos realm. For example:
+
+    ``` shell
+    root@kdc-server$ kadmin.local -q "addprinc -randkey postgres/<master>@<realm>”
+    ```
+    
+    The `addprinc` command adds the principal `postgres/<master>` to the KDC managing your \<realm\>.
+
+3. Generate a keytab file for the HAWQ `postgres/<master>` principal. Provide the same name you used to generate the principal:
+
+    ``` shell
+    root@kdc-server$ kadmin.local -q "xst -norandkey -k hawq-krb5.keytab postgres/<master>@<realm>”
+    ```
+
+    The keytab entry is is saved to the `./hawq-krb5.keytab` file.
+
+4. Use the `klist` command to view the key you just added to `hawq-krb5.keytab`:
+
+    ``` shell
+    root@kdc-server$ klist -ket ./hawq-krb5.keytab
+    ```
+    
+    The `-ket` option lists the keytabs and encryption types in the identified key file.
+
+5. Copy the keytab file to the HAWQ master node:
+
+    ``` shell
+    root@kdc-server$ scp ./hawq-krb5.keytab gpadmin@<master>:/home/gpadmin/
+    ```
+
+6. Log in to the HAWQ master node as the `gpadmin` user and set up the HAWQ environment:
+
+    ``` shell
+    $ ssh gpadmin@<master>
+    gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
+    ```
+    
+7. Verify the ownership and mode of the keytab file you copied to the master in a previous step:
+
+    ``` shell
+    gpadmin@master$ chown gpadmin:gpadmin /home/gpadmin/hawq-krb5.keytab
+    gpadmin@master$ chmod 400 /home/gpadmin/hawq-krb5.keytab
+    ```
+
+    The HAWQ server keytab file must be readable (and preferably only readable) by the HAWQ `gpadmin` administrative account.
+
+8. Add a `pg_hba.conf` entry that mandates Kerberos authentication for HAWQ. The `pg_hba.conf` file resides in the directory specified by the `hawq_master_directory` server configuration parameter value. For example, add:
+
+    ``` pre
+    host all all 0.0.0.0/0 gss include_realm=0 krb_realm=REALM.DOMAIN
+    ```
+    
+    This `pg_hba.conf` entry specifies that any remote access (i.e. from any user on any remote host) to HAWQ must be authenticated through the Kerberos realm named `REALM.DOMAIN`.
+    
+    Locate the Kerberos entry in the appropriate location in the `pg_hba.conf` file. Refer to [Configuring Client Authentication](client_auth.html) for additional information about this file.
+
+9. Update HAWQ configuration. You will perform different procedures if you manage your cluster from the command line or use Ambari to manage your cluster.
+
+    1. If you manage your cluster using Ambari:
+    
+        1.  Login in to the Ambari UI from a supported web browser.
+
+        2. Navigate to the **HAWQ** service, **Configs > Advanced** tab and expand the **Custom hawq-site** drop down.
+
+        3. Set the `krb_server_keyfile` path value to the new keytab file location, `/home/gpadmin/hawq-krb5.keytab`.
+
+        4. **Save** this configuration change and then select the now orange **Restart > Restart All Affected** menu button to restart your HAWQ cluster.
+
+        5. Exit the Ambari UI.  
+    
+    2. If you manage your cluster from the command line:
+    
+        1.  Update the `krb_server_keyfile` configuration parameter:
+
+            ``` shell
+            gpadmin@master$ hawq config -c krb_server_keyfile -v '/home/gpadmin/hawq-krb5.keytab'
+            GUC krb_server_keyfile already exist in hawq-site.xml
+            Update it with value: /home/gpadmin/hawq-krb5.keytab
+            GUC      : krb_server_keyfile
+            Value    : /home/gpadmin/hawq-krb5.keytab
+            ```
+
+        2.  Restart your HAWQ cluster:
+
+            ``` shell
+            gpadmin@master$ hawq restart cluster
+            ```
+
+
+### <a id="hawq_kerb_user_cfg"></a>Configure Kerberos-Authenticated HAWQ Users
+
+After enabling Kerberos user authentication to HAWQ, you will configure the HAWQ user principals. The first component of a HAWQ user principal must be the HAWQ user/role name, for example \<hawq-user\>@\<realm\>.
+
+This procedure includes:
+
+- Identifying an existing or creating a new HAWQ role for each user you want to authenticate with Kerberos
+- Creating a Kerberos principal for each new role
+- Optionally generating and distributing a keytab file to all HAWQ clients from which you will access HAWQ as the new role
+
+#### Procedure <a id="hawq_kerb_user_cfg_proc"></a>
+
+Perform the following steps to configure Kerberos authentication for specific HAWQ users. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
+
+1. Log in to the HAWQ master node as the `gpadmin` user and set up your HAWQ environment:
+
+   ``` shell
+   $ ssh gpadmin@master
+   gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
+   ```
+
+1. Create a Kerberos-authorized HAWQ user/role. For example:
+
+    ``` shell
+    gpadmin@master$ psql -d template1 -c 'CREATE ROLE "bill/kerberos" with LOGIN;'
+    ```
+
+    This step creates a HAWQ operational role. Create an administrative HAWQ role by adding the `SUPERUSER` clause to the `CREATE ROLE` command.
+    
+    Alternatively, you may identify the name of an existing HAWQ user/role.
+
+2. Create a principal for the HAWQ role. Substitute the Kerberos realm you noted earlier. For example:
+
+    ``` shell
+    $ ssh root@<kdc-server>
+    root@kdc-server$ kadmin.local -q "addprinc -pw changeme bill/kerberos@<realm>"
+    ```
+
+3. You may choose to have the HAWQ role authenticate with a password or a keytab file. 
+
+    1. If you choose password authentication, no further configuration is required. Skip the rest of this step.
+    
+    2. If you choose authentication via a keytab file:
+    
+        1. Generate a keytab file for the HAWQ principal, again substituting your Kerberos realm. For example:
+
+            ``` shell
+            root@kdc-server$ kadmin.local -q "xst -k bill-krb5.keytab bill/kerberos@<realm>”
+            ```
+
+            The keytab entry is saved to the `./bill-krb5.keytab` file.
+
+        2. View the key you just added to `bill-krb5.keytab`:
+
+            ``` shell
+            root@kdc-server$ klist -ket ./bill-krb5.keytab
+            ```
+
+        3. Distribute the keytab file to **all** HAWQ nodes from which you will access the HAWQ master as the user/role. For example:
+
+            ``` shell
+            root@kdc-server$ scp ./bill-krb5.keytab bill@<hawq-node>:/home/bill/
+            ```
+
+4. Log in to the HAWQ node as the user who for whom you created the principal and set up your HAWQ environment:
+
+    ``` shell
+    $ ssh bill@<hawq-node>
+    bill@hawq-node$ . /usr/local/hawq/greenplum_path.sh
+    ```
+
+5. If you are using keytab file authentication, verify the ownership and mode of the keytab file:
+
+    ``` shell
+    bill@hawq-node$ chown bill:bill /home/bill/bill-krb5.keytab
+    bill@hawq-node$ chmod 400 /home/bill/bill-krb5.keytab
+    ```
+
+8. Try to connect to a HAWQ database as the new `bill/kerberos` user:
+
+    ``` shell
+    bill@hawq-node$ psql -d testdb -h <master> -U bill/kerberos
+    psql: GSSAPI continuation error: Unspecified GSS failure.  Minor code may provide more information
+    GSSAPI continuation error: Credentials cache file '/tmp/krb5cc_502' not found
+    ```
+    
+    The operation fails. The `bill/kerberos` user has not yet authenticated with the Kerberos server.
+
+### <a id="hawq_kerb_dbaccess"></a>Authenticate User Access to HAWQ 
+
+When connecting to a HAWQ database with Kerberos user authentication enabled, you must request a ticket from the KDC server for a principal matching the requested database user name. When granted, the ticket expires after a set period of time, after which you will need to request another ticket.
+   
+To generate a Kerberos ticket, run the `kinit` command. Specify the Kerberos principal for which you are requesting the ticket in a command option. You may optionally specify a path to the keytab file.
+
+For example, to request a ticket for the `bill/kerberos` user principal you created above using the keytab file for authentication:
+
+``` shell
+bill@hawq-node$ kinit -k -t /home/bill/bill-krb5.keytab bill/kerberos@<realm>
+```
+
+To request a ticket for the `bill/kerberos` user principal using password authentication:
+
+``` shell
+bill@hawq-node$ kinit -k -t /home/bill/bill-krb5.keytab bill/kerberos@<realm>
+Password for bill/kerberos@<realm>:
+```
+
+`kinit` prompts you for the password. Enter the password at the prompt.
+
+For more information about the ticket, use the `klist` command. `klist` invoked without any arguments lists the currently held Kerberos principal and tickets. The command output also provides the ticket expiration time. 
+
+Example output from the `klist` command:
+
+``` shell
+bill@hawq-node$ klist
+Ticket cache: FILE:/tmp/krb5cc_502
+Default principal: bill/kerberos@REALM
+
+Valid starting     Expires            Service principal
+06/07/17 23:16:04  06/08/17 23:16:04  krbtgt/REALM@REALM
+	renew until 06/07/17 23:16:04
+06/07/17 23:16:07  06/08/17 23:16:04  postgres/master@
+	renew until 06/07/17 23:16:04
+06/07/17 23:16:07  06/08/17 23:16:04  postgres/master@REALM
+	renew until 06/07/17 23:16:04
+```
+
+After generating a ticket, you can connect to a HAWQ database as a kerberos-authenticated user using `psql` or other client programs.
+
+#### <a id="topic7"></a>Name Mapping 
+
+To simplify Kerberos-authenticated HAWQ user login, you can define a mapping between a user's Kerberos principal name and a HAWQ database user name. You define the mapping in the `pg_ident.conf` file. You use the mapping by specifying a `map=<map-name>` option to a specific entry in the `pg_hba.conf` file. 
+
+The `pg_ident.conf` and `pg_hba.conf` files reside on the HAWQ master node in the directory identified by the `hawq_master_directory` server configuration parameter setting value.
+
+The `pg_ident.conf` file defines the user name map. You can create entries in this file that define a mapping name, a Kerberos principal name, and a HAWQ database user name. For example:
+
+```
+# MAPNAME   SYSTEM-USERNAME        HAWQ-USERNAME
+kerbmap     /^(.*)/kerberos@REALM$   \1
+```
+
+This entry extracts the first component of the Kerberos principal name and maps that to a HAWQ user/role of the same name. With the appropriate identity service set up and this mapping in place, if your operating system user name is `bill` and you log in to HAWQ, the login is mapped to the Kerberos principal name `bill/kerberos@REALM` automatically for you; you do not need to specify the `-U` option to the `psql` command. ?? IS THIS HOW IT WORKS ??
+
+Identify the map name in the `pg_hba.conf` file in the entry that enables Kerberos support. For example:
+
+```
+host all all 0.0.0.0/0 gss include_realm=0 krb_realm=REALM map=kerbmap
+```
+
+For more information about specifying username maps see [Username maps](http://www.postgresql.org/docs/8.4/static/auth-username-maps.html) in the Postgres documentation.
+
+## <a id="client_considerations"></a>Kerberos Considerations for Non-HAWQ Clients
+
+If you access HAWQ databases from clients outside of your HAWQ cluster, you must specifically configure Kerberos access on these client systems. Ensure that:
+
+- The `krb5-libs` and `krb5-workstation` packages are installed on each client.
+- The `/etc/krb5.conf` Kerberos configuration file in use by the HAWQ cluster is copied to each client system.
+- You have created the appropriate principal for the HAWQ user.
+
+
+## <a id="task_setup_kdc"></a>Appendix: Install and Configure a Kerberos KDC Server 
+
+**Note:** If your installation already has a KDC server, you do not need to perform this procedure. Take note of the KDC server host name or IP address and the name of the realm in which your cluster resides. You will need this information later.
 
 Follow these steps to install and configure a Kerberos Key Distribution Center \(KDC\) server on a Red Hat Enterprise Linux host. The KDC server resides on the host named \<kdc-server\>.
 
@@ -150,308 +455,6 @@ Follow these steps to install and configure a Kerberos Key Distribution Center \
     root@kdc-server$ /sbin/chkconfig krb5kdc on
     root@kdc-server$ /sbin/chkconfig kadmin on
     ```
-
-## <a id="task_kerbhdfs"></a>Step 3: Configure HAWQ/PXF for Kerberized HDFS
-
-Both Kerberos and Hadoop are complex subsystems. Detailing the Kerberos configuration for your Hadoop cluster is beyond the scope of this document. 
-
-This section calls out the specific steps you must perform to configure HAWQ and PXF client service principals after securing your HDFS filesystem.
-
-### <a id="task_kerbhdfs_ambarimgd"></a>Procedure for Ambari-Managed Clusters
-
-If you manage your cluster with Ambari, you will enable Kerberos authentication for your cluster as described in the [Enabling Kerberos Authentication Using Ambari](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.5.3/bk_security/content/configuring_amb_hdp_for_kerberos.html) Hortonworks documentation. The Ambari **Kerberos Security Wizard** guides you through the kerberization process, including installing Kerberos packages on cluster nodes, syncing Kerberos configuration files, updating cluster configuration, and creating and distributing the Kerberos principals and keytab files for your Hadoop cluster services, including HAWQ and PXF. 
-
-Ensure that you have installed the Java Cryptography Extension (JCE) on all nodes in your cluster as described in the [Install the JCE](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.5.3/bk_security/content/_distribute_and_install_the_jce.html) section of the Hortonworks document. 
-
-### <a id="task_kerbhdfs_cmdlinemgd"></a>Procedure for Command-Line-Managed Clusters
-
-If you manage your cluster from the command line, perform the following steps to configure the HAWQ and PXF client principals for HDFS:
-
-1. Enable Kerberos for your Hadoop cluster per the instructions for your specific distribution. Verify the configuration.
-
-2. Distribute the `/etc/krb5.conf` Kerberos configuration file on the KDC server node to **each** HAWQ and PXF cluster node if this was not done in Step 1. Save a copy of the original `krb5.conf` file. For example:
-
-    ``` shell
-    $ ssh root@<hawq-node>
-    root@hawq-node$ cp /etc/krb5.conf /save/krb5.conf.save
-    root@hawq-node$ scp kdc-server:/etc/krb5.conf /etc/krb5.conf
-    ```
-
-2. Install the Kerberos client packages on **each** HAWQ and PXF node if they are not already present.
-
-    ``` shell
-    root@hawq-node$ yum install krb5-libs krb5-workstation
-    ```
-
-3. Configure the HAWQ client service principal:
-
-    1. Create a Kerberos principal for the HAWQ client service.
-    2. Generate a keytab file for the HAWQ service principal `postgres@<realm>`.
-    3. Copy the HAWQ service keytab file to all HAWQ nodes.
-    4. Set HAWQ server configuration parameters.
-    5. Restart the HAWQ cluster.
-
-4. Configure a PXF service principal for **each** PXF node:
-
-    1. Create a Kerberos principal for the PXF service on the node.
-    2. Generate a keytab file for the PXF node service principal `pxf/<pxf-node>@<realm>`.
-    3. Copy the PXF service keytab file to the PXF node. 
-    4. Set PXF configuration parameters on the node.
-    5. Restart the PXF service on the node.
-
-
-## <a id="hawq_kerb_cfg"></a>Step 4a: Configure Kerberos User Authentication for HAWQ
-
-You can configure HAWQ to require Kerberos authentication for user access to HAWQ databases. When HAWQ uses Kerberos for user authentication, it uses a standard principal to connect to the KDC. The format of this principal is `postgres/<FQDN_of_master>@<realm>`, where \<FQDN\_of\_master\> refers to the fully qualified distinguish name of the HAWQ master node.
-
-The procedure to configure Kerberos user authentication for HAWQ includes:
-
-- Generating a Kerberos principal and keytab entry for the `postgres` process on the HAWQ master node
-- Configuring HAWQ to use the new keytab file
-- Updating the HAWQ `pg_hba.conf` configuration file to specify Kerberos authentication
-- Restarting the HAWQ cluster
-
-### Procedure <a id="hawq_kerb_cfg_proc"></a>
-
-Perform the following steps to configure Kerberos authentication for HAWQ. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
-
-1. Log in to the KDC server system:
-
-    ``` shell
-    $ ssh root@<kdc-server>
-    ```
-
-2. Generate a keytab entry for the HAWQ `postgres` principal using the `kadmin.local` command. Substitute the HAWQ master node fully qualified distinguished hostname and your Kerberos realm. For example:
-
-    ``` shell
-    root@kdc-server$ kadmin.local -q "addprinc -randkey postgres/<master>@<realm>”
-    ```
-    
-    The `addprinc` command adds the principal `postgres/<master>` to the KDC managing your \<realm\>.
-
-3. Generate a keytab file for the HAWQ `postgres/<master>` principal. Provide the same name you used to generate the principal:
-
-    ``` shell
-    root@kdc-server$ kadmin.local -q "xst -norandkey -k hawq-krb5.keytab postgres/<master>@<realm>”
-    ```
-
-    The keytab entry is is saved to the `./hawq-krb5.keytab` file.
-
-4. Use the `klist` command to view the key you just added to `hawq-krb5.keytab`:
-
-    ``` shell
-    root@kdc-server$ klist -ket ./hawq-krb5.keytab
-    ```
-    
-    The `-ket` option lists the keytabs and encryption types in the identified key file.
-
-5. Copy the keytab file to the HAWQ master node:
-
-    ``` shell
-    root@kdc-server$ scp ./hawq-krb5.keytab gpadmin@<master>:/home/gpadmin/
-    ```
-
-6. Log in to the HAWQ master node as the `gpadmin` user and set up the HAWQ environment:
-
-    ``` shell
-    $ ssh gpadmin@<master>
-    gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
-    ```
-    
-7. Verify the ownership and mode of the keytab file you copied to the master in a previous step:
-
-    ``` shell
-    gpadmin@master$ chown gpadmin:gpadmin /home/gpadmin/hawq-krb5.keytab
-    gpadmin@master$ chmod 400 /home/gpadmin/hawq-krb5.keytab
-    ```
-
-    The HAWQ server keytab file must be readable (and preferably only readable) by the HAWQ `gpadmin` administrative account.
-
-8. Add a `pg_hba.conf` entry that mandates Kerberos authentication for HAWQ. The `pg_hba.conf` file resides in the directory specified by the `hawq_master_directory` server configuration parameter value. For example, add:
-
-    ``` pre
-    host all all 0.0.0.0/0 gss include_realm=0 krb_realm=REALM.DOMAIN
-    ```
-    
-    This `pg_hba.conf` entry specifies that any remote access (i.e. from any user on any remote host) to HAWQ must be authenticated through the Kerberos realm named `REALM.DOMAIN`.
-    
-    Locate the Kerberos entry in the appropriate location in the `pg_hba.conf` file. Refer to [Configuring Client Authentication](client_auth.html) for additional information on this file.
-
-9. Update HAWQ configuration. You will perform different procedures if you manage your cluster from the command line or use Ambari to manage your cluster.
-
-    1. If you manage your cluster using Ambari:
-    
-        1.  Login in to the Ambari UI from a supported web browser.
-
-        2. Navigate to the **HAWQ** service, **Configs > Advanced** tab and expand the **Custom hawq-site** drop down.
-
-        3. Set the `krb_server_keyfile` path value to the new keytab file location, `/home/gpadmin/hawq-krb5.keytab`.
-
-        4. **Save** this configuration change and then select the now orange **Restart > Restart All Affected** menu button to restart your HAWQ cluster.
-
-        5. Exit the Ambari UI.  
-    
-    2. If you manage your cluster from the command line:
-    
-        1.  Update the `krb_server_keyfile` configuration parameter:
-
-            ``` shell
-            gpadmin@master$ hawq config -c krb_server_keyfile -v '/home/gpadmin/hawq-krb5.keytab'
-            GUC krb_server_keyfile already exist in hawq-site.xml
-            Update it with value: /home/gpadmin/hawq-krb5.keytab
-            GUC      : krb_server_keyfile
-            Value    : /home/gpadmin/hawq-krb5.keytab
-            ```
-
-        2.  Restart your HAWQ cluster:
-
-            ``` shell
-            gpadmin@master$ hawq restart cluster
-            ```
-
-
-## <a id="hawq_kerb_user_cfg"></a>Step 4b: Configure Kerberos-Authenticated HAWQ Users
-
-After enabling Kerberos user authentication to HAWQ, you will configure the HAWQ user principals. The first component of a HAWQ user principal must be the HAWQ user/role name, for example \<hawq-user\>@\<realm\>.
-
-This procedure includes:
-
-- Identifying an existing or creating a new HAWQ role for each user you want to authenticate with Kerberos
-- Generating a Kerberos principal and keytab file for each new role
-- Distributing the keytab file to all HAWQ clients from which you want to access HAWQ as the new role
-
-### Procedure <a id="hawq_kerb_user_cfg_proc"></a>
-
-Perform the following steps to configure Kerberos authentication for specific HAWQ users. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
-
-1. Log in to the HAWQ master node as the `gpadmin` user and set up your HAWQ environment:
-
-   ``` shell
-   $ ssh gpadmin@master
-   gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
-   ```
-
-1. Create a Kerberos-authorized HAWQ user/role:
-
-    ``` shell
-    gpadmin@master$ psql -d template1 -c 'CREATE ROLE "bill/kerberos" with LOGIN;'
-    ```
-    
-    (You may choose a different name for the role.)
-    
-    This step creates a HAWQ operational role. Create an administrative HAWQ role by adding the `SUPERUSER` clause to the `CREATE ROLE` command.
-    
-    Alternatively, you may identify the name of an existing HAWQ user/role.
-
-2. Generate a keytab entry for the HAWQ role principal. Substitute the Kerberos realm you noted earlier. For example:
-
-    ``` shell
-    $ ssh root@<kdc-server>
-    root@kdc-server$ kadmin.local -q "addprinc -pw changeme bill/kerberos@<realm>"
-    ```
-
-3. Generate a keytab file for the HAWQ principal, again substitute your Kerberos realm. For example:
-
-    ``` shell
-    root@kdc-server$ kadmin.local -q "xst -k bill-krb5.keytab bill/kerberos@<realm>”
-    ```
-
-    The keytab entry is is saved to the `./bill-krb5.keytab` file.
-
-4. View the key you just added to `bill-krb5.keytab`:
-
-    ``` shell
-    root@kdc-server$ klist -ket ./bill-krb5.keytab
-    ```
-
-5. Distribute the keytab file to **all** HAWQ nodes from which you will access the HAWQ master as the user/role. For example:
-
-    ``` shell
-    root@kdc-server$ scp ./bill-krb5.keytab bill@<hawq-node>:/home/bill/
-    ```
-
-6. Log in to the HAWQ node as the user who for whom you created the principal and set up your HAWQ environment:
-
-    ``` shell
-    $ ssh bill@<hawq-node>
-    bill@hawq-node$ . /usr/local/hawq/greenplum_path.sh
-    ```
-
-7. Verify the ownership and mode of the keytab file:
-
-    ``` shell
-    bill@hawq-node$ chown bill:bill /home/bill/bill-krb5.keytab
-    bill@hawq-node$ chmod 400 /home/bill/bill-krb5.keytab
-    ```
-
-8. Try to connect to a HAWQ database as the new `bill/kerberos` user:
-
-    ``` shell
-    bill@hawq-node$ psql -d testdb -h <master> -U bill/kerberos
-    psql: GSSAPI continuation error: Unspecified GSS failure.  Minor code may provide more information
-    GSSAPI continuation error: Credentials cache file '/tmp/krb5cc_502' not found
-    ```
-    
-    The operation fails. The `bill/kerberos` user has not yet authenticated with the Kerberos server.
-
-## <a id="hawq_kerb_dbaccess"></a>Step 4c: Authenticate User Access to HAWQ 
-
-When connecting to a HAWQ database, you must request a ticket from the KDC server for a principal matching the requested database user name. When granted, the ticket expires after a set period of time, after which you will need to request another ticket.
-   
-To generate a Kerberos ticket, run the `kinit` command. Specify the path to the keytab file and the Kerberos principal for which you are requesting the ticket in options to the command. `kinit` prompts you for the password.
-
-For example, to request a ticket for the `bill/kerberos` user principal you created above:
-
-``` shell
-bill@hawq-node$ kinit -k -t /home/bill/bill-krb5.keytab bill/kerberos@<realm>
-Password for bill/kerberos@<realm>:
-```
-
-Enter the password at the prompt.
-
-For more information about the ticket, use the `klist` command. `klist` invoked without any arguments lists the currently held Kerberos principal and tickets. The command output also provides the ticket expiration time. 
-
-Example output of the `klist` command is displayed here:
-
-``` shell
-bill@hawq-node$ klist
-Ticket cache: FILE:/tmp/krb5cc_502
-Default principal: bill/kerberos@REALM
-
-Valid starting     Expires            Service principal
-06/07/17 23:16:04  06/08/17 23:16:04  krbtgt/REALM@REALM
-	renew until 06/07/17 23:16:04
-06/07/17 23:16:07  06/08/17 23:16:04  postgres/master@
-	renew until 06/07/17 23:16:04
-06/07/17 23:16:07  06/08/17 23:16:04  postgres/master@REALM
-	renew until 06/07/17 23:16:04
-```
-
-After generating a ticket, you can connect to a HAWQ database as a kerberos-authenticated user using `psql` or other client programs.
-
-### <a id="topic7"></a>Name Mapping 
-
-To simplify Kerberos-authenticated HAWQ user login, you can define a mapping between the a user's Kerberos principal name and a HAWQ database user name. You define the mapping in the `pg_ident.conf` file. You use the mapping by specifying a `map=<map-name>` option to a specific entry in the `pg_hba.conf` file. 
-
-The `pg_ident.conf` and `pg_hba.conf` files reside on the HAWQ master node in the directory identified by the `hawq_master_directory` server configuration parameter setting value.
-
-The `pg_ident.conf` file defines the user name map. You can create entries in this file that define a mapping name, a Kerberos principal name, and a HAWQ database user name. For example:
-
-```
-# MAPNAME   SYSTEM-USERNAME        HAWQ-USERNAME
-kerbmap     /^(.*)/kerberos@REALM$   \1
-```
-
-This entry extracts the first component of the Kerberos principal name and maps that to a HAWQ user/role of the same name. With the appropriate identify service set up and this mapping in place, if your operating system user name is `bill` and you log in to HAWQ, the login is mapped to the Kerberos principal name `bill/kerberos@REALM` automatically for you; you do not need to specify the `-U` option to the `psql` command. ?? IS THIS HOW IT WORKS ??
-
-Identify the map name in the `pg_hba.conf` file in the entry that enables Kerberos support. For example:
-
-```
-host all all 0.0.0.0/0 gss include_realm=0 krb_realm=REALM map=kerbmap
-```
-
-For more information about specifying username maps see [Username maps](http://www.postgresql.org/docs/8.4/static/auth-username-maps.html) in the Postgres documentation.
-
 
 ## <a id="topic9"></a>Configure Kerberos-Authenticated JDBC Access to HAWQ 
 
