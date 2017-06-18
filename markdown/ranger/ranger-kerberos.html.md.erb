@@ -23,42 +23,44 @@ under the License.
 
 When you have enabled Ranger Authorization for HAWQ, your HAWQ installation includes the Ranger Administrative UI and HAWQ Ranger Plug-in Service.
 
-To enable HAWQ Ranger Kerberos authentication, you must configure Kerberos support for:
+To enable Kerberos authentication for HAWQ Ranger, you must configure Kerberos support for:
 
 - HAWQ user authentication
-- Ranger Administration host lookup of HAWQ resources during policy definition 
+- HAWQ resource lookup by Ranger Administration host during HAWQ policy definition 
 - HAWQ Ranger Plug-in Service communication with the Ranger Administration host for policy checks
 
 Use the following procedures to configure Kerberos support for your Ranger-authorized HAWQ cluster.
 
 ## Prerequisites <a id="kerb_ranger_prereq"></a>
 
-Before you enable Kerberos for your Ranger-authorized HAWQ cluster, ensure that you have:
+Before you configure Kerberos for your Ranger-authorized HAWQ cluster, ensure that you have:
 
-- Noted the host name or IP address of your Ranger Administration Host (\<ranger-admin\>) and HAWQ master (\<master\>) nodes.
-- Set up your Kerberos Key Distribution Center (KDC) as described in [Step 2: Install and Configure a Kerberos KDC Server](../clientaccess/kerberos.html#task_setup_kdc) or identify an existing KDC.
+- Noted the host name or IP address of your Ranger Administration Host (\<ranger-admin-node\>) and HAWQ master (\<master\>) nodes.
+- Identified an existing Kerberos Key Distribution Center (KDC) or set up your KDC as described in [Install and Configure a Kerberos KDC Server](../clientaccess/kerberos.html#task_setup_kdc).
     - Note the host name or IP address of your KDC (\<kdc-server\>).
     - Note the name of the Kerberos \<realm\> in which your cluster resides.
-- Enabled Ranger Authorization for HAWQ. See [XXX]().
-- Configured Kerberos authentication for HAWQ user access as described in [Step 4a: Configure Kerberos User Authentication for HAWQ](../clientaccess/kerberos.html#hawq_kerb_cfg).
-- Installed the Java Cryptography Extension (JCE) on all nodes in your cluster. 
+- Enabled Ranger Authorization for HAWQ. See [Configuring HAWQ to use Ranger Policy Management](ranger-integration-config.html).
+- Configured Kerberos authentication for Ranger.
+- Configured Kerberos authentication for HAWQ user access as described in [Configure Kerberos User Authentication for HAWQ](../clientaccess/kerberos.html#hawq_kerb_cfg).
+- Installed the Java Cryptography Extension (JCE) on all Ranger Administration nodes in your cluster. 
     - If you manage your cluster with Ambari, the JCE was installed on each node when you enabled Kerberos with the Ambari **Kerberos Security Wizard**. 
-    - If you manage your cluster from the command line, you must manually install the extension on all nodes in your HAWQ cluster.
+    - If you manage your cluster from the command line, you must manually install the extension on these systems.
 
 
-## Configure Ranger Admin Host for Kerberized HAWQ <a id="ra2hawq_kerb_cfg"></a>
+## Configure Ranger for Kerberized HAWQ<a id="ra2hawq_kerb_cfg"></a>
 
-The Ranger Administration Host connects to HAWQ to look up resource names during policiy definition. When Kerberos user authentication is enabled for HAWQ, this access must be kerberized as well.
+When you define HAWQ Ranger authorization policies, the Ranger Administration Host connects to HAWQ during policy definition to look up policy resource names. When Kerberos user authentication is enabled for HAWQ, you must also kerberize this access.
 
-To configure Ranger access to a kerberized HAWQ cluster, you must:
+To configure Ranger access to a HAWQ cluster using Kerberos user authentication, you must:
 
-- Create a Kerberos-authorized HAWQ role for Ranger lookup of HAWQ resources
-- Generate a Kerberos principal for the new Ranger lookup role
-- Configure the Ranger HAWQ service definition to use the new Ranger lookup role
+- Identify an existing or create a new HAWQ administrative role for HAWQ resource Ranger lookup
+- Generate a Kerberos principal for the Ranger lookup role
+- Configure Java Security on the Ranger Adminstration Host(s)
+- Configure the Ranger HAWQ service definition to use Kerberos authentication
 
 ### Procedure <a id="kerb_ra2hawq_proc"></a>
 
-Perform the following steps to enable the Ranger Administration Host to look up resources in your kerberized HAWQ cluster. You will perform operations on both the HAWQ \<master\> and the \<kdc-server\> nodes.
+Perform the following steps to enable the Ranger Administration Host to look up resources in your kerberized HAWQ cluster. You will perform operations on the HAWQ \<master\>, \<ranger-admin-node\>, and \<kdc-server\> nodes.
 
 1. Log in to the HAWQ master node and set up your environment:
 
@@ -67,40 +69,84 @@ Perform the following steps to enable the Ranger Administration Host to look up 
     gpadmin@master$ . /usr/local/hawq/greenplum_path.sh
     ```
 
-2. Create a HAWQ administrative role for Ranger resource lookup:
+2. Identify an existing or create a HAWQ administrative role for Ranger resource lookup. For example, to create a new administrative role:
 
     ``` shell
-    gpadmin@master$ psql -c 'CREATE ROLE "rangerlookup/kerberos" with LOGIN SUPERUSER;' 
+    gpadmin@master$ psql -c 'CREATE ROLE "rangerlookup_hawq" with LOGIN SUPERUSER;' 
     ```
    
     You may choose a different name for the Ranger lookup role.
 
-3. Log in to the KDC server system and generate a keytab entry for the HAWQ `rangerlookup/kerberos` principal. Substitute your Kerberos \<realm\>. For example:
+3. Log in to the KDC server system and generate a principal for the HAWQ `rangerlookup_hawq` role. Substitute your Kerberos \<realm\>. For example:
 
     ``` shell
     $ ssh root@<kdc-server>
-    root@kdc-server$ kadmin.local -q "addprinc -pw changeme rangerlookup/kerberos@REALM”
+    root@kdc-server$ kadmin.local -q "addprinc -pw changeme rangerlookup_hawq@REALM”
     ```
     
-    You do not need to generate a keytab file because you will manually enter the `rangerlookup/kerberos` password in the Ranger Adminin UI HAWQ Service definition page.
+    You do not need to generate a keytab file for the `rangerlookup_hawq` principal because you will provide the password in the Ranger Admin UI HAWQ Service definition page.
 
-4. ?? Configure policies for the new role ??
+4. Configure Java security on your Ranger Administration host. If you have enabled High Availability for Ranger, perform this configuration on **each** Ranger Administration host in your highly-available cluster.
+    
+    1. Log in to the Ranger Administration host, and create or add the following to the `/home/ranger/.java.login.config` file:
+
+        ``` shell
+        $ ssh root@<ranger-admin-node>
+        root@ranger-admin-node$ sudo su - ranger
+        ranger@ranger-admin-node$ vi $HOME/.java.login.config
+        ```
+    
+        ``` pre
+        pgjdbc {
+          com.sun.security.auth.module.Krb5LoginModule required
+          doNotPrompt=false
+          useTicketCache=true
+          debug=true
+          client=true;
+        };
+        ```
+    
+        ``` shell
+        ranger@ranger-admin-node$ exit
+        root@ranger-admin-node$ 
+        ```
+
+    2. Update the Java security configuration file on the Ranger Administration host. Uncomment the `login.config.url.1` setting:
+
+        ``` shell
+        root@ranger-admin-node$ sudo vi /usr/jdk64/jdk1.8.0_77/jre/lib/security/java.security
+        ```
+        
+        Your Java home directory may differ.
+    
+        ``` pre
+        #
+        # Default login configuration file
+        #
+        login.config.url.1=file:${user.home}/.java.login.config
+        ```
+
+    3. Restart Ranger - ?? VIA COMMAND LINE OR AMBARI ??:
+
+        ``` shell
+        root@ranger-admin-node$ ranger-admin stop && ranger-admin start
+        ``` 
 
 #### Configure and Verify Connectivity <a id="kerb_ra2hawq_verify"></a>
 
-Perform the following steps to configure and verify Kerberos connectivity between the Ranger Administration host and HAWQ using the new Ranger lookup role. 
+Perform the following steps to configure and verify Kerberos connectivity between the Ranger Administration host and HAWQ using the Ranger lookup role. 
 
-1. Start the Ranger Admin UI by navigating to \<ranger-admin\>:6080 in a supported web browser. 
+1. Start the Ranger Admin UI by navigating to \<ranger-admin-node\>:6080 in a supported web browser. 
 
-2. Locate the HAWQ service definition and select the **Edit** button. 
+2. Locate the HAWQ service definition and press the **Edit** button. 
 
 3. Fill out the **Config Properties** fields:
 
-    **HAWQ User Name*** - The HAWQ Ranger lookup role name you created in Step N.  
+    **HAWQ User Name*** - The HAWQ Ranger lookup role you identified or created in Step 2 above.  
     **HAWQ User Password*** - The password you assigned to the HAWQ Ranger lookup role principal.  
     **HAWQ Authentication Type** - Select **Kerberos** from the drop-down list.  
     **HAWQ Kerberos Service Name** - `postgres`  
-    **HAWQ Master Hostname*** - The HAWQ master node host name or IP address.  
+    **HAWQ Master Hostname*** - The HAWQ master node fully qualified distinguished host name.  
     **HAWQ Master Port*** - The HAWQ master port number.  
  
 3. Click the **Test Connection** button. If you connected successfully, Ranger displays a dialog with the message:
@@ -111,23 +157,69 @@ Perform the following steps to configure and verify Kerberos connectivity betwee
 
     You successfully configured HAWQ Ranger resource lookup to use Kerberos authentication.
 
-4. **Save** your changes to permanently configure Kerberos authentication for HAWQ Ranger.
+4. **Save** your changes to permanently configure Kerberos authentication for HAWQ Ranger resource lookup.
 
 
-## Configure HAWQ Ranger for Kerberized Ranger Administration Host<a id="rps2ra_kerb_cfg"></a>
+## Configure HAWQ for Kerberized Ranger<a id="rps2ra_kerb_cfg"></a>
 
-DISCUSS THIS:
+When Ranger Authorization is enabled for HAWQ, the Ranger Plug-in Service fetches policies from the Ranger Administration host. When Ranger is Kerberized ?? WHAT NEEDS TO HAPPEN ??.
 
-steps so far:
+This procedure includes:
 
-- Add `postgres` user (Admin, external) in Ranger UI
-- JCE - FOR CMDLINE MANAGED CLUSTERS - HERE OR BEFORE??
-- create spnego principal (HTTP/<FQDN_OF_Ranger_Admin_Cluster>@<REALM>) - fqdn is ranger proxy if HA enabled - IS THIS ALREADY DONE IF AMBARI MANAGED CLUSTER?
+- Adding a Ranger `postgres` user with `Admin` role
+- Updating HAWQ Ranger Plug-in Service configuration to utilize Kerberos
+- ??
 
 
 ### Procedure <a id="kerb_rps2ra_proc"></a>
 
+Perform the following steps to enable XXX:
 
-1. step1
-	
-2. step2
+1. Create a `postgres` Ranger administrative user.
+
+    1. Open the Ranger Admin UI. The default URL is <ranger-admin-node>:6080.
+    2. Navigate to **Settings > Users/Groups**.
+    3. Press the **Add New User** button.
+    4. Fill out the required fields in the **User Detail** dialog:
+
+        **User Name*** - `postgres`.  
+        **New Password*** - The user's password.  ?? IS THIS SIGNIFICANT ??  
+        **Password Confirm*** - Enter the password again.  
+        **First Name*** - The first name of the user.  
+        **Select Role*** - Select **Admin**. 
+
+2. Edit the HAWQ Ranger Plug-in Service `rps.properties` configuration file and set the `RPS_AUTH` property to specify Kerberos authentication:
+
+    ``` shell
+    gpadmin@master$ vi $GPHOME/ranger/etc/rps.properties
+    ```
+    
+    ``` pre
+    RPS_AUTH=kerberos
+    ``` 
+
+3. Stop the Ranger Plug-in Service:
+
+    ``` shell
+    gpadmin@master$  $GPHOME/ranger/bin/rps.sh stop
+    ```
+
+4. Generate a ticket for `postgres@REALM`:
+
+    ``` shell
+    gpadmin@master$ kinit -kt /etc/security/keytabs/hawq.service.keytab postgres@REALM
+    ```
+
+5. Restart the Ranger Plug-in Service:
+
+    ``` shell
+    gpadmin@master$  $GPHOME/ranger/bin/rps.sh start
+    ```
+
+#### Verify Connectivity <a id="kerb_rps2ra_verify"></a>
+
+Perform the following steps to verify Kerberos connectivity between the HAWQ Ranger Plug-in Service and the Ranger Admininstration host for policy checking.
+
+1. Examine the HAWQ Ranger Plug-in Service log file.
+2. Examine the HAWQ Ranger Plug-in Service log file.
+3. Examine the HAWQ Ranger Plug-in Service log file.
