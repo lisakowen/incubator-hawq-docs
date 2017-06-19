@@ -21,9 +21,27 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-Follow these steps to disable Kerberos security for HAWQ and PXF for manual installations.
+HAWQ supports Kerberos at both the HDFS and/or user authentication levels. You will perform different disable procedures for each.
 
-**Note:** If you install or manage your cluster using Ambari, then the HAWQ Ambari plug-in automatically disables security for HAWQ and PXF when you disable security for Hadoop. The following instructions are only necessary for manual installations, or when Hadoop security is disabled outside of Ambari.
+## <a id="disable_kerb"></a>Disabling Kerberos Authentication for HAWQ 
+
+You will perform the following tasks to disable Kerberos authentication with HAWQ:
+
+1.  If you have enabled Kerberos at the HDFS filesystem level, see [Disable Kerberized HDFS for HAWQ/PXF](#disable_kerb_hdfs).
+2.  If you have enabled Kerberos user authentication for HAWQ, see [Disable Kerberos User Authentication for HAWQ](#disable_kerb_hawq).
+
+
+### <a id="disable_kerb_hdfs"></a>Disable Kerberized HDFS for HAWQ/PXF
+
+You will perform different procedures to disable HAWQ/PXF access to a previously-kerberized HDFS.
+
+#### <a id="disable_kerb_hdfs_ambari"></a>Procedure for Ambari-Managed Clusers
+
+If you manage your cluster using Ambari, you will disable Kerberos authentication for your cluster as described in the [How To Disable Kerberos](https://docs.hortonworks.com/HDPDocuments/Ambari-2.4.2.0/bk_ambari-user-guide/content/how_to_disable_kerberos.html) Hortonworks documentation. Ambari will guide you through the de-kerberization process, including removing/updating any authentication-related configuration in your cluster.
+
+#### <a id="disable_kerb_hdfs_ambari"></a>Procedure for Ambari-Managed Clusers
+
+If you manage your cluster from the command line, follow these instructions to disable HDFS Kerberos security for HAWQ and PXF.
 
 1.  Disable Kerberos on the Hadoop cluster on which you use HAWQ.
 2.  Disable security for HAWQ:
@@ -31,6 +49,7 @@ Follow these steps to disable Kerberos security for HAWQ and PXF for manual inst
 
         ``` bash
         $ ssh gpadmin@<master>
+        gpadmin@master$ 
         ```
 
     2.  Run the following command to set up HAWQ environment variables:
@@ -42,7 +61,7 @@ Follow these steps to disable Kerberos security for HAWQ and PXF for manual inst
     3.  Start HAWQ if necessary:
 
         ``` bash
-        gpadmin@master$ hawq start -a
+        gpadmin@master$ hawq start cluster -a
         ```
 
     4.  Run the following command to disable security:
@@ -76,11 +95,11 @@ Follow these steps to disable Kerberos security for HAWQ and PXF for manual inst
     7.  Restart HAWQ:
 
         ``` bash
-        gpadmin@master$ hawq restart -a -M fast
+        gpadmin@master$ hawq restart cluster -a -M fast
         ```
 
 3.  Disable security for PXF. Perform these steps on *each* PXF node:
-    1.  Edit the `/etc/pxf/conf/pxf-site.xml` to comment or remove the properties:
+    1.  Edit the `/etc/pxf/conf/pxf-site.xml` to comment out or remove the following properties:
 
         ``` xml
         <!--
@@ -106,3 +125,22 @@ Follow these steps to disable Kerberos security for HAWQ and PXF for manual inst
         ``` bash
         root@pxf-node$ service pxf-service restart
         ```
+
+### <a id="disable_kerb_hawq"></a>Disable Kerberos User Authentication for HAWQ
+
+Perform the following procedure to disable Kerberos user authentication for HAWQ.
+
+??WHAT ELSE TO DO HERE - ANYTHING WITH PRINCIPALS??
+
+
+3. Comment out or remove the `pg_hba.conf` entry that mandates Kerberos authentication for HAWQ. For example, comment out:
+
+    ``` pre
+    #host all all 0.0.0.0/0 gss include_realm=0 krb_realm=REALM.DOMAIN
+    ```
+
+4. Update the `pg_hba.conf` file to configure non-Kerberos access restrictions for all your HAWQ users. The `pg_hba.conf` file resides in the directory specified by the `hawq_master_directory` server configuration parameter value. 
+
+5. Reload HAWQ configuration.
+
+6. Notify your HAWQ users that `kinit` ticket requests are no longer required to authenticate to HAWQ.
